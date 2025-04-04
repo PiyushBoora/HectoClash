@@ -1,0 +1,188 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Timer } from "lucide-react";
+import Sequence from "./Sequence";
+import socket from "../Utils/socket";
+import { useGetMe } from "../services/queries";
+import axios from "../Utils/axios";
+
+const Game = () => {
+  const { id: roomId } = useParams(); // Room ID
+  const navigate = useNavigate();
+  const { data: user, isLoading: userFetching, isError: userError } = useGetMe();
+  const [score,setScore]=useState(0);
+  // Opponent state with all relevant data
+  const [opponentState, setOpponentState] = useState({
+    opponent: null,
+    isLoading: false,
+    isError: false,
+    score: 0,
+  });
+
+  const [time, setTime] = useState();
+  const [sequence, setSequence] = useState([]);
+  const [isGameActive, setIsGameActive] = useState(false);
+  const [gameCanStart, setGameCanStart] = useState(false);  // Track if the game has started
+  
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const fetchOpponent = async (userId) => {
+    console.log(userId);
+    if (!userId) return;
+    setOpponentState((prev) => ({ ...prev, isLoading: true, isError: false }));
+
+    try {
+      const response = await axios.get(`/api/user/get/${userId}`);
+      if (!response.data.success) {
+        throw new Error(response.data.message || "Failed to fetch user");
+      }
+      setOpponentState((prev) => ({ ...prev, opponent: response.data.user, isLoading: false }));
+
+      // Emit playerReady event when opponent is fetched successfully
+      socket.emit("playerReady", { roomId, playerId: user?._id });
+
+    } catch (error) {
+      setOpponentState((prev) => ({ ...prev, isError: true, isLoading: false }));
+    }
+  };
+  
+    useEffect(()=>{
+      
+       socket.emit("joinRoom", { roomId: roomId, playerId:user._id });
+       return () => {
+        socket.off("joinRoom");
+      };
+    },[])
+  useEffect(() => {
+    // Listen for both players being ready
+    socket.on("bothPlayersReady", () => {
+      console.log("Both players are ready, starting game...");
+      setGameCanStart(true);
+      socket.emit("startGame", { roomId });
+    });
+
+    // Listen for game start event
+    socket.on("GameStarted", ({ sequence }) => {
+      console.log("Game started! Sequence:", sequence);
+      setSequence(sequence);
+      setIsGameActive(true);
+    });
+
+    // Listen for the timer update from backend
+    socket.on("timerUpdate", ({ timer }) => {
+      console.log(timer);
+      setTime(timer);
+    });
+
+    // Listen for the next sequence to update the sequence state
+    socket.on("nextSequence", ({ sequence }) => {
+      setSequence(sequence);
+    });
+
+    // Handle game over
+    socket.on("gameOver", ({ message }) => {
+      setIsGameActive(false);
+    });
+
+    // Handle room update, fetch opponent details and update score
+    socket.on("roomUpdate", (room) => {
+      console.log(room);
+      const otherPlayer = room.players.find((p) => p.playerId !== user?._id);
+      if (otherPlayer) {
+        fetchOpponent(otherPlayer.playerId);
+        setOpponentState((prev) => ({ ...prev, score: otherPlayer.score }));
+      }
+    });
+
+    // Listen for score updates from other players
+    socket.on("latestScore", ({ players }) => {
+      const otherPlayer = players.find((p) => p.playerId !== user?._id);
+      if (otherPlayer) {
+        setOpponentState((prev) => ({ ...prev, score: otherPlayer.score }));
+      }
+    });
+
+    return () => {
+      socket.off("bothPlayersReady");
+      socket.off("startGame");
+      socket.off("timerUpdate");
+      socket.off("nextSequence");
+      socket.off("gameOver");
+      socket.off("roomUpdate");
+      socket.off("latestScore");
+    };
+  }, []);
+
+  const handleScoreUpdate = () => {
+    const newScore = score + 1;
+    setScore(newScore);
+    socket.emit("updateScore", { roomId, score: newScore });
+  };
+
+  if (isGameActive && (userFetching || opponentState.isLoading || opponentState.isError || userError)) {
+    return (
+      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {isGameActive ? (
+        <div className="min-h-screen bg-main-black pt-10 max-md:px-5 flex flex-col items-center justify-start">
+          <div className="flex flex-col h-full w-[50%] max-w-full max-md:w-full">
+            <div className="w-full flex items-center justify-between">
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <img src={user?.profileImage} className="size-[2.5rem] rounded-xl" />
+                  <span className="text-main-white text-[1.25rem] font-semibold">You</span>
+                </div>
+                <div className="py- px-5 bg-[#2a2a2a] border-[1px] border-main-green rounded-[10px]">
+                  <span className="text-main-white ">{score}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <img src={opponentState.opponent?.profileImage} className="size-[2.5rem] rounded-xl" />
+                  <span className="text-main-white text-[1.25rem] font-semibold">{opponentState.opponent?.name}</span>
+                </div>
+                <div className="py- px-5 bg-[#2a2a2a] border-[1px] border-main-green rounded-[10px]">
+                  <span className="text-main-white ">{opponentState.score}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center">
+              <div className="flex gap-1 items-center p-1 px-2 border-[1px] border-main-white/30 rounded-[10px]">
+                <Timer className="size-[0.9rem] text-[#00ffff]" />
+                <span className="text-[#00ffff] text-s font-bold">{formatTime(time)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 flex-col flex items-center justify-center">
+            {sequence.length > 0 && <Sequence sequence={sequence} handleScoreUpdate={handleScoreUpdate} />}
+          </div>
+        </div>
+      ) : (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a1a1a] text-[#e0e0e0]">
+          <h1 className="text-3xl font-bold">Waiting for Opponent...</h1>
+          {roomId && (
+            <div className="mt-4">
+              <p className="text-xl">Your Duel ID:</p>
+              <span className="text-[#00ffff] font-mono text-2xl">{roomId}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+};
+
+export default Game;
