@@ -15,7 +15,7 @@ export const useGetMe = () => {
           navigate('/login');
           throw new Error(response.data.error || 'Something went wrong');
         }
-
+        
         // Update user state in the store
         return response.data.user;
       } catch (error) {
@@ -33,15 +33,16 @@ export const useGetMe = () => {
 
 
 export const useGetUserById = (userId:string|null) => {
-    return  useQuery({
-      queryKey: ['user', userId], // Unique query key including userId
-      queryFn: async () => {
-        if (!userId) {
-          throw new Error('User ID is required');
-        }
-  
-        try {
-          // API call to fetch user by ID
+  return  useQuery({
+    queryKey: ['user', userId], // Unique query key including userId
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      
+      try {
+        // API call to fetch user by ID
+        console.log(userId);
           const response = await axios.get(`/api/user/get/${userId}`);
           if (!response.data.success) {
             throw new Error(response.data.message || 'Failed to fetch user');

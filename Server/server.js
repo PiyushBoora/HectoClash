@@ -55,32 +55,64 @@ const sequences = [
   ["5", "1", "7", "3", "6", "2"],
   ["8", "3", "6", "4", "9", "7"],
 ]; // Add more sequences as needed
-const GAME_TIME = 120; // Total game time in seconds
+const GAME_TIME = 1200; // Total game time in seconds
+
+// Add function to emit rooms update to all spectators
+function emitRoomsUpdate() {
+  const activeRooms = Object.entries(rooms).map(([roomId, room]) => ({
+    roomId,
+    players: room.players,
+    timer: room.timer,
+    gameStarted: room.gameStarted
+  }));
+  io.emit("roomsUpdate", { rooms: activeRooms });
+}
 
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
+  // Add handler for spectator connection
+  socket.on("spectatorJoin", () => {
+    console.log(`Spectator joined: ${socket.id}`);
+    emitRoomsUpdate();
+  });
+
   socket.on("joinRoom", ({ roomId, playerId }) => {
     if (!rooms[roomId]) {
-      rooms[roomId] = { players: [], timer: GAME_TIME ,gameStarted :false};
+      rooms[roomId] = { players: [], timer: GAME_TIME, gameStarted: false };
     }
 
     if (rooms[roomId].players.length < 2) {
       rooms[roomId].players.push({
         id: socket.id,
         playerId: playerId,
-        score: 0, // Initialize score
-        sequenceIndex: 0, // Initialize sequence index
-        ready: false, // Initially not ready
+        score: 0,
+        sequenceIndex: 0,
+        ready: false,
+        currentExpression: "" // Initialize the current expression field
       });
 
       socket.join(roomId);
       console.log(`${playerId} joined room: ${roomId}`);
 
       io.to(roomId).emit("roomUpdate", rooms[roomId]);
+      emitRoomsUpdate(); // Emit update to spectators
     } else {
       socket.emit("roomFull", { message: "Room is full!" });
     }
+  });
+
+  // Listen for mathExpression events
+  socket.on("mathExpression", ({ expression, playerId,roomId }) => {
+    // Find which room this player is in
+    
+      const player = rooms[roomId].players.find(p => p.playerId === playerId);
+      if (player) {
+        // Update the player's current expression
+        player.currentExpression = expression;
+        // Also update the general room state for spectators
+        emitRoomsUpdate();
+      }
   });
 
   // When a player is ready
@@ -99,36 +131,38 @@ io.on("connection", (socket) => {
   });
 
   // Start game when frontend emits "startGame"
- // In your server.js
-socket.on("startGame", ({ roomId }) => {
-  console.log(rooms[roomId]);
-  if (rooms[roomId] && rooms[roomId].players.length === 2 && !rooms[roomId].gameStarted) {
-    console.log(`Game started in room: ${roomId}`);
-    
-    // Set a flag to indicate the game has started
-    rooms[roomId].gameStarted = true;
-    
-    // Start game timer
-    startGameTimer(roomId);
+  socket.on("startGame", ({ roomId }) => {
+    console.log(rooms[roomId]);
+    if (rooms[roomId] && rooms[roomId].players.length === 2 && !rooms[roomId].gameStarted) {
+      console.log(`Game started in room: ${roomId}`);
+      
+      // Set a flag to indicate the game has started
+      rooms[roomId].gameStarted = true;
+      
+      // Start game timer
+      startGameTimer(roomId);
 
-    // Send the first sequence to each player
-    rooms[roomId].players.forEach((player) => {
-      const initialSequence = sequences[player.sequenceIndex];
-      io.to(player.id).emit("GameStarted", {
-        message: "Game Starting!",
-        sequence: initialSequence,
+      // Send the first sequence to each player
+      rooms[roomId].players.forEach((player) => {
+        const initialSequence = sequences[player.sequenceIndex];
+        io.to(player.id).emit("GameStarted", {
+          message: "Game Starting!",
+          sequence: initialSequence,
+        });
       });
-    });
-  }
-});
+    }
+  });
+
   socket.on("updateScore", ({ roomId, score }) => {
     if (rooms[roomId]) {
       const player = rooms[roomId].players.find((p) => p.id === socket.id);
       if (player) {
         player.score = score;
-        player.sequenceIndex += 1; // Move to the next sequence
+        player.sequenceIndex += 1;
+        player.currentExpression = ""; // Reset current expression when moving to next sequence
 
         io.to(roomId).emit("latestScore", { players: rooms[roomId].players });
+        emitRoomsUpdate(); // Emit update to spectators
 
         // Check if there's a next sequence
         if (player.sequenceIndex < sequences.length) {
@@ -183,6 +217,7 @@ function startGameTimer(roomId) {
       io.to(roomId).emit("gameOver", { message: "Time's up!" });
       delete rooms[roomId]; // Clean up the room data
     }
+    emitRoomsUpdate();
   }, 1000); // Update every second
 }
 
