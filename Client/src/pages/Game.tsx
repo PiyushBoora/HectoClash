@@ -6,6 +6,7 @@ import Sequence from "./Sequence";
 import socket from "../Utils/socket";
 import { useGetMe } from "../services/queries";
 import axios from "../Utils/axios";
+import { getRandomQuestions } from "../data/questions";
 
 const Game = () => {
   const { id: roomId } = useParams();
@@ -23,6 +24,7 @@ const Game = () => {
   const [sequence, setSequence] = useState([]);
   const [isGameActive, setIsGameActive] = useState(false);
   const [gameCanStart, setGameCanStart] = useState(false);
+  const [solutions, setSolutions] = useState([]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -65,21 +67,42 @@ const Game = () => {
       socket.emit("startGame", { roomId });
     });
 
-    socket.on("GameStarted", ({ sequence }) => {
+    socket.on("GameStarted", async ({ sequence }) => {
       setSequence(sequence);
       setIsGameActive(true);
+      
+      // Get solutions for the sequence
+      try {
+        const response = await axios.post('/api/game/solutions', { sequence });
+        if (response.data.success) {
+          setSolutions(response.data.solutions);
+        }
+      } catch (error) {
+        console.error('Failed to fetch solutions:', error);
+      }
     });
 
     socket.on("timerUpdate", ({ timer }) => {
       setTime(timer);
     });
 
-    socket.on("nextSequence", ({ sequence }) => {
+    socket.on("nextSequence", async ({ sequence }) => {
       setSequence(sequence);
+      
+      // Get solutions for the new sequence
+      try {
+        const response = await axios.post('/api/game/solutions', { sequence });
+        if (response.data.success) {
+          setSolutions(response.data.solutions);
+        }
+      } catch (error) {
+        console.error('Failed to fetch solutions:', error);
+      }
     });
 
     socket.on("gameOver", () => {
       setIsGameActive(false);
+      navigate(`/analysis/${roomId}`);
     });
 
     socket.on("roomUpdate", (room) => {
@@ -202,6 +225,7 @@ const Game = () => {
               {sequence.length > 0 && (
                 <Sequence
                   sequence={sequence}
+                  solutions={solutions}
                   handleScoreUpdate={handleScoreUpdate}
                 />
               )}

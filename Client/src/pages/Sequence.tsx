@@ -17,6 +17,7 @@ interface Box {
 
 interface SequenceProps {
   sequence: string[];
+  solutions: { expression: string; difficulty: number }[];
   handleScoreUpdate: () => void;
 }
 
@@ -37,7 +38,7 @@ const generateBoxes = (sequence: string[]) => {
   return newBoxes;
 };
 
-const Sequence = ({ sequence, handleScoreUpdate }: SequenceProps) => {
+const Sequence = ({ sequence, solutions, handleScoreUpdate }: SequenceProps) => {
   const fixedOperators: OperatorType[] = ["+", "-", "*", "/"];
   const [boxes, setBoxes] = useState<Box[]>(() => generateBoxes(sequence));
   const [draggedOperator, setDraggedOperator] = useState<OperatorType | null>(null);
@@ -303,6 +304,30 @@ const Sequence = ({ sequence, handleScoreUpdate }: SequenceProps) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Available Solutions */}
+      {solutions && solutions.length > 0 && showFeedback && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-3xl bg-[#2a2a2a] rounded-xl p-6"
+        >
+          <h3 className="text-white font-bold mb-4">Available Solutions:</h3>
+          <div className="space-y-2">
+            {solutions.map((solution, index) => (
+              <div
+                key={index}
+                className="bg-[#3a3a3a] rounded-lg p-3 flex justify-between items-center"
+              >
+                <span className="font-mono text-white">{solution.expression}</span>
+                <span className="text-[#918a8a] text-sm">
+                  Difficulty: {solution.difficulty}
+                </span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };

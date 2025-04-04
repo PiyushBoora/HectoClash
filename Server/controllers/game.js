@@ -1,17 +1,17 @@
 const Game = require('../models/Game');
 const User = require('../models/User');
-const sequences = require('../data/sequences.json').sequences;
+const { gameQuestions } = require('../data/questions');
 const SolutionGenerator = require('../services/solutionGenerator');
 
 const getRandomSequences = (count) => {
-  const shuffled = [...sequences].sort(() => 0.5 - Math.random());
+  const shuffled = [...gameQuestions].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, count);
 };
 
 const createGame = async (req, res) => {
   try {
     const { type, players } = req.body;
-    const gameSequences = getRandomSequences(5); // Get 5 random sequences
+    const gameSequences = getRandomSequences(5);
 
     // Generate solutions for each sequence
     const solutions = await Promise.all(
@@ -25,7 +25,7 @@ const createGame = async (req, res) => {
       type,
       players: players.map(playerId => ({ userId: playerId })),
       sequences: gameSequences,
-      solutions, // Store solutions in the game document
+      solutions,
       startTime: new Date()
     });
 
@@ -108,13 +108,19 @@ const getLeaderboard = async (req, res) => {
       .limit(10)
       .select('name profileImage stats');
 
-    // Update ranks
-    for (let i = 0; i < users.length; i++) {
-      users[i].stats.rank = i + 1;
-      await users[i].save();
-    }
-
     res.json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getSolutions = async (req, res) => {
+  try {
+    const { sequence } = req.body;
+    const digits = sequence.map(Number);
+    const solutions = await SolutionGenerator.generateSolutions(digits);
+    
+    res.json({ success: true, solutions });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -124,5 +130,6 @@ module.exports = {
   createGame,
   updateGameStats,
   getGameStats,
-  getLeaderboard
+  getLeaderboard,
+  getSolutions
 };

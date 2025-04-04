@@ -10,7 +10,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import socket from "../Utils/socket";
-import { useGetMe } from "../services/queries";
+import { useGetMe, useGetLeaderboard } from "../services/queries";
 import {
   BarChart,
   Bar,
@@ -26,33 +26,8 @@ const Dashboard = () => {
   const [showCopied, setShowCopied] = useState(false);
   const [isJoiningDuel, setIsJoiningDuel] = useState(false);
   const { data: user, isLoading, isError } = useGetMe();
+  const { data: leaderboardData, isLoading: isLeaderboardLoading } = useGetLeaderboard();
   const navigate = useNavigate();
-
-  // Dummy data for leaderboard and statistics
-  const leaderboardData = [
-    { id: 1, name: "Alex", score: 2500, rank: 1 },
-    { id: 2, name: "Sarah", score: 2300, rank: 2 },
-    { id: 3, name: "John", score: 2100, rank: 3 },
-    { id: 4, name: "Emma", score: 2000, rank: 4 },
-    { id: 5, name: "Michael", score: 1900, rank: 5 },
-  ];
-
-  const performanceData = [
-    { name: "Mon", score: 85 },
-    { name: "Tue", score: 92 },
-    { name: "Wed", score: 78 },
-    { name: "Thu", score: 95 },
-    { name: "Fri", score: 88 },
-    { name: "Sat", score: 91 },
-    { name: "Sun", score: 85 },
-  ];
-
-  const stats = [
-    { icon: Trophy, label: "Total Score", value: "2,547" },
-    { icon: Timer, label: "Avg. Time", value: "1m 45s" },
-    { icon: Target, label: "Accuracy", value: "89%" },
-    { icon: TrendingUp, label: "Win Rate", value: "73%" },
-  ];
 
   useEffect(() => {
     if (isError) {
@@ -98,6 +73,40 @@ const Dashboard = () => {
     hidden: { y: 20, opacity: 0 },
     show: { y: 0, opacity: 1 },
   };
+
+  // Default stats when user data is not available
+  const defaultStats = [
+    { icon: Trophy, label: "Total Score", value: "0" },
+    { icon: Timer, label: "Avg. Time", value: "0s" },
+    { icon: Target, label: "Accuracy", value: "0%" },
+    { icon: TrendingUp, label: "Win Rate", value: "0%" },
+  ];
+
+  // Calculate real stats from user data
+  const stats = user ? [
+    { 
+      icon: Trophy, 
+      label: "Total Score", 
+      value: user.stats.totalScore.toString() 
+    },
+    { 
+      icon: Timer, 
+      label: "Avg. Time", 
+      value: `${Math.round(user.stats.averageTime)}s` 
+    },
+    { 
+      icon: Target, 
+      label: "Accuracy", 
+      value: `${Math.round(user.stats.accuracy)}%` 
+    },
+    { 
+      icon: TrendingUp, 
+      label: "Win Rate", 
+      value: user.stats.gamesPlayed > 0 
+        ? `${Math.round((user.stats.wins / user.stats.gamesPlayed) * 100)}%` 
+        : "0%" 
+    },
+  ] : defaultStats;
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] pt-20 px-4 sm:px-6 lg:px-8">
@@ -170,29 +179,35 @@ const Dashboard = () => {
               Weekly Performance
             </h2>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a" />
-                  <XAxis
-                    dataKey="name"
-                    stroke="#918a8a"
-                    tick={{ fill: "#918a8a" }}
-                  />
-                  <YAxis stroke="#918a8a" tick={{ fill: "#918a8a" }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#2a2a2a",
-                      border: "none",
-                      borderRadius: "8px",
-                    }}
-                  />
-                  <Bar
-                    dataKey="score"
-                    fill="#00ffff"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {user && user.stats.gamesPlayed > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={user.weeklyPerformance || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a" />
+                    <XAxis
+                      dataKey="name"
+                      stroke="#918a8a"
+                      tick={{ fill: "#918a8a" }}
+                    />
+                    <YAxis stroke="#918a8a" tick={{ fill: "#918a8a" }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#2a2a2a",
+                        border: "none",
+                        borderRadius: "8px",
+                      }}
+                    />
+                    <Bar
+                      dataKey="score"
+                      fill="#00ffff"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-[#918a8a]">
+                  No performance data available yet
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -204,30 +219,36 @@ const Dashboard = () => {
               Global Leaderboard
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-[#918a8a]">
-                    <th className="text-left py-2">Rank</th>
-                    <th className="text-left py-2">Player</th>
-                    <th className="text-right py-2">Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaderboardData.map((player) => (
-                    <motion.tr
-                      key={player.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      whileHover={{ backgroundColor: "#3a3a3a" }}
-                      className="text-white border-t border-[#3a3a3a]"
-                    >
-                      <td className="py-3">#{player.rank}</td>
-                      <td className="py-3">{player.name}</td>
-                      <td className="py-3 text-right">{player.score}</td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
+              {isLeaderboardLoading ? (
+                <div className="text-center text-[#918a8a] py-4">Loading leaderboard...</div>
+              ) : leaderboardData && leaderboardData.length > 0 ? (
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-[#918a8a]">
+                      <th className="text-left py-2">Rank</th>
+                      <th className="text-left py-2">Player</th>
+                      <th className="text-right py-2">Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboardData.map((player, index) => (
+                      <motion.tr
+                        key={player._id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        whileHover={{ backgroundColor: "#3a3a3a" }}
+                        className="text-white border-t border-[#3a3a3a]"
+                      >
+                        <td className="py-3">#{index + 1}</td>
+                        <td className="py-3">{player.name}</td>
+                        <td className="py-3 text-right">{player.stats.totalScore}</td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="text-center text-[#918a8a] py-4">No leaderboard data available</div>
+              )}
             </div>
           </div>
         </motion.div>

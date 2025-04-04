@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Timer, ArrowRight, BarChart2 } from "lucide-react";
 import Sequence from "./Sequence";
+import { getRandomQuestions } from "../data/questions";
+import axios from "../Utils/axios";
 import {
   BarChart,
   Bar,
@@ -35,21 +37,16 @@ const Practice = () => {
     totalQuestions: 0,
     solutions: [],
   });
+  const [solutions, setSolutions] = useState([]);
+  const [questions, setQuestions] = useState<string[][]>([]);
 
-  // Dummy sequences for practice
-  const sequences = [
-    ["5", "6", "6", "5", "8", "5"],
-    ["5", "1", "7", "3", "6", "2"],
-    ["8", "3", "6", "4", "9", "7"],
-    ["1", "5", "8", "2", "7", "4"],
-    ["6", "2", "9", "4", "5", "3"],
-  ];
-
-  const handleStartGame = (minutes: number) => {
+  const handleStartGame = async (minutes: number) => {
+    const selectedQuestions = getRandomQuestions(5);
+    setQuestions(selectedQuestions);
     setSelectedTime(minutes);
     setTimeRemaining(minutes * 60);
     setIsGameStarted(true);
-    setCurrentSequence(sequences[0]);
+    setCurrentSequence(selectedQuestions[0]);
     setQuestionIndex(0);
     setScore(0);
     setStats({
@@ -58,9 +55,19 @@ const Practice = () => {
       totalQuestions: 0,
       solutions: [],
     });
+
+    // Get solutions for the first sequence
+    try {
+      const response = await axios.post('/api/game/solutions', { sequence: selectedQuestions[0] });
+      if (response.data.success) {
+        setSolutions(response.data.solutions);
+      }
+    } catch (error) {
+      console.error('Failed to fetch solutions:', error);
+    }
   };
 
-  const handleScoreUpdate = () => {
+  const handleScoreUpdate = async () => {
     setScore((prev) => prev + 1);
     setStats((prev) => ({
       ...prev,
@@ -68,9 +75,20 @@ const Practice = () => {
       timeSpent: [...prev.timeSpent, selectedTime! * 60 - timeRemaining],
     }));
     
-    if (questionIndex < sequences.length - 1) {
+    if (questionIndex < questions.length - 1) {
       setQuestionIndex((prev) => prev + 1);
-      setCurrentSequence(sequences[questionIndex + 1]);
+      const nextSequence = questions[questionIndex + 1];
+      setCurrentSequence(nextSequence);
+
+      // Get solutions for the next sequence
+      try {
+        const response = await axios.post('/api/game/solutions', { sequence: nextSequence });
+        if (response.data.success) {
+          setSolutions(response.data.solutions);
+        }
+      } catch (error) {
+        console.error('Failed to fetch solutions:', error);
+      }
     }
   };
 
@@ -86,7 +104,6 @@ const Practice = () => {
             setStats((prev) => ({
               ...prev,
               totalQuestions: questionIndex + 1,
-              solutions: sequences.map(() => "2+4*9+3+8*4=100"), // Dummy solutions
             }));
             return 0;
           }
@@ -190,6 +207,7 @@ const Practice = () => {
             {currentSequence.length > 0 && (
               <Sequence
                 sequence={currentSequence}
+                solutions={solutions}
                 handleScoreUpdate={handleScoreUpdate}
               />
             )}
@@ -287,24 +305,39 @@ const Practice = () => {
 
             <motion.div variants={item} className="space-y-6">
               <h3 className="text-xl font-bold text-white">Solutions</h3>
-              {stats.solutions.map((solution, index) => (
+              {questions.map((sequence, index) => (
                 <div
                   key={index}
-                  className="bg-[#2a2a2a] rounded-xl p-6 flex justify-between items-center"
+                  className="bg-[#2a2a2a] rounded-xl p-6"
                 >
-                  <div>
+                  <div className="flex justify-between items-center mb-4">
                     <span className="text-[#918a8a]">Question {index + 1}</span>
-                    <p className="text-white font-mono mt-2">{solution}</p>
+                    <div className="flex gap-2">
+                      {sequence.map((num, i) => (
+                        <span
+                          key={i}
+                          className="w-8 h-8 flex items-center justify-center bg-[#3a3a3a] rounded-lg text-white font-bold"
+                        >
+                          {num}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      index < stats.correctAnswers
-                        ? "bg-green-500/20 text-green-500"
-                        : "bg-red-500/20 text-red-500"
-                    }`}
-                  >
-                    {index < stats.correctAnswers ? "Correct" : "Incorrect"}
-                  </span>
+                  <div className="mt-4 space-y-2">
+                    {solutions[index]?.map((solution, solutionIndex) => (
+                      <div
+                        key={solutionIndex}
+                        className="bg-[#3a3a3a] rounded-lg p-3 flex justify-between items-center"
+                      >
+                        <span className="font-mono text-white">
+                          {solution.expression}
+                        </span>
+                        <span className="text-[#918a8a] text-sm">
+                          Difficulty: {solution.difficulty}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </motion.div>
@@ -318,7 +351,6 @@ const Practice = () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   setShowAnalysis(false);
-                  
                   setSelectedTime(null);
                 }}
                 className="bg-[#00ffff] text-[#1a1a1a] px-8 py-3 rounded-lg font-semibold hover:bg-[#00cccc] transition-colors"

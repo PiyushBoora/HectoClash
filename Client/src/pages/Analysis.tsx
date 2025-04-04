@@ -12,55 +12,14 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import axios from "../Utils/axios";
 import { Trophy, Clock, Target, Award } from "lucide-react";
-
-interface Player {
-  userId: {
-    name: string;
-    profileImage: string;
-  };
-  score: number;
-  timeSpent: number[];
-  correctAnswers: number;
-  totalQuestions: number;
-}
-
-interface Solution {
-  expression: string;
-  difficulty: number;
-}
-
-interface GameStats {
-  type: string;
-  players: Player[];
-  sequences: string[][];
-  solutions: Solution[][];
-  startTime: string;
-  endTime: string;
-}
+import { useGetGameAnalysis } from "../services/queries";
 
 const Analysis = () => {
   const { gameId } = useParams();
-  const [gameStats, setGameStats] = useState<GameStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: gameStats, isLoading } = useGetGameAnalysis(gameId);
 
-  useEffect(() => {
-    const fetchGameStats = async () => {
-      try {
-        const response = await axios.get(`/api/game/${gameId}/stats`);
-        setGameStats(response.data.game);
-      } catch (error) {
-        console.error("Error fetching game stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGameStats();
-  }, [gameId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#1a1a1a] pt-20 flex items-center justify-center">
         <div className="text-white">Loading analysis...</div>
@@ -250,7 +209,7 @@ const Analysis = () => {
                 
                 {/* Solutions */}
                 <div className="mt-4 border-t border-[#4a4a4a] pt-4">
-                  <h4 className="text-[#918a8a] mb-2">Possible Solutions:</h4>
+                  <h4 className="text-[#918a8a] mb-2">Solutions:</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {gameStats.solutions[index].map((solution, solutionIndex) => (
                       <div
