@@ -17,23 +17,38 @@
     sequence: string[];
   }
 
-  const generateBoxes=(sequence:string[])=>{
-      const newBoxes: Box[] = Array(sequence.length * 2 - 1)
-      .fill(null)
-      .map((_, i) => {
-        const isNumberBox = i % 2 === 0;
-        return {
-          id: i,
-          value: isNumberBox ? sequence[Math.floor(i / 2)] || "" : "",
-          type: isNumberBox ? "number" : "operator",
-          isFixed: isNumberBox,
+  const generateBoxes = (expression: string): Box[] => {
+    const boxes: Box[] = [];
+    let id = 0;
+  
+    for (let i = 0; i < expression.length; i++) {
+      const char = expression[i];
+  
+      if (/\d/.test(char)) {
+        boxes.push({
+          id: id++,
+          value: char,
+          type: "number",
+          isFixed: true,
+          hasLeftParenthesis: i > 0 && expression[i - 1] === "(",
+          hasRightParenthesis: i < expression.length - 1 && expression[i + 1] === ")",
+        });
+      } else if (["+", "-", "*", "/"].includes(char)) {
+        boxes.push({
+          id: id++,
+          value: char,
+          type: "operator",
+          isFixed: false,
           hasLeftParenthesis: false,
           hasRightParenthesis: false,
-        };
-      });
-    return newBoxes;
-  }
-
+        });
+      }
+      // ignore parentheses themselves, handled above
+    }
+  
+    return boxes;
+  };
+  
   const SpectatingSequence = ({ sequence }: SequenceProps) => {
     const fixedOperators: OperatorType[] = ["+", "-", "*", "/"];
     const [boxes, setBoxes] = useState<Box[]>(() => {
@@ -119,16 +134,7 @@
                       boxesRef.current[index] = el;
                     }}
                     className={`relative border-blue-900 w-full rounded-lg flex items-center justify-center`}
-                    onHoverStart={() => {
-                      if (draggedOperator && box.type === "operator") {
-                        setHoveredBoxIndex(index);
-                      }
-                    }}
-                    onHoverEnd={() => {
-                      if (draggedOperator) {
-                        setHoveredBoxIndex(null);
-                      }
-                    }}
+                    
                     // onClick={() =>
                     //   box.type === "operator" && handleOperatorDelete(index)
                     // }
@@ -141,10 +147,10 @@
                         //     e.stopPropagation();
                         //     toggleParenthesis(index, "left");
                         //   }}
-                          className={`absolute left-0 top-[45%] -translate-y-1/2 -translate-x-1 px-1 text-3xl font-bold cursor-pointer ${
+                          className={`absolute left-0 top-[45%] -translate-y-1/2 -translate-x-1 px-1 text-3xl font-bold ${
                             box.hasLeftParenthesis
                               ? "text-[#00ffff]"
-                              : "text-transparent group-hover:text-[#6a6a6a]"
+                              : "text-transparent"
                           }`}
                         >
                           (
@@ -163,10 +169,10 @@
                         //     e.stopPropagation();
                         //     toggleParenthesis(index, "right");
                         //   }}
-                          className={`absolute right-0 top-[45%] -translate-y-1/2 translate-x-1 px-1 text-3xl font-bold cursor-pointer ${
+                          className={`absolute right-0 top-[45%] -translate-y-1/2 translate-x-1 px-1 text-3xl font-bold ${
                             box.hasRightParenthesis
                               ? "text-[#00ffff]"
-                              : "text-transparent group-hover:text-[#6a6a6a]"
+                              : "text-transparent"
                           }`}
                         >
                           )

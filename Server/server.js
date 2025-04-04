@@ -77,9 +77,9 @@ io.on("connection", (socket) => {
     emitRoomsUpdate();
   });
 
-  socket.on("joinRoom", ({ roomId, playerId }) => {
+  socket.on("joinRoom", ({ roomId, playerId,gameTime }) => {
     if (!rooms[roomId]) {
-      rooms[roomId] = { players: [], timer: GAME_TIME, gameStarted: false };
+      rooms[roomId] = { players: [], timer: gameTime,duelTime:GAME_TIME, gameStarted: false };
     }
 
     if (rooms[roomId].players.length < 2) {
@@ -169,7 +169,7 @@ io.on("connection", (socket) => {
           const nextSequence = sequences[player.sequenceIndex];
           io.to(socket.id).emit("nextSequence", { sequence: nextSequence });
         } else {
-          io.to(socket.id).emit("gameOver", { message: "No more sequences!" });
+          io.to(socket.id).emit("gameOver", { message: "No more sequences!",room:rooms[roomId] });
         }
       }
     }
@@ -214,7 +214,7 @@ function startGameTimer(roomId) {
     // End the game when the timer reaches 0
     if (rooms[roomId].timer <= 0) {
       clearInterval(interval);
-      io.to(roomId).emit("gameOver", { message: "Time's up!" });
+      io.to(roomId).emit("gameOver", { message: "Time's up!",room:rooms[roomId] });
       delete rooms[roomId]; // Clean up the room data
     }
     emitRoomsUpdate();

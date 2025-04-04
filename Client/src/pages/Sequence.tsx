@@ -194,40 +194,43 @@
   // }
 
   // export default HectocGame;
+"use client";
 
-
-  import { useState, useRef, useEffect } from "react";
-  import { motion } from "framer-motion";
-  import { isequalto100 } from "../Utils/SequenceChecker";
-  import { useGetMe } from "../services/queries";
-  import socket from "../Utils/socket";
+import { useEffect, useRef, useState } from "react";
+import { motion, useMotionValue, animate } from "framer-motion";
 import { useParams } from "react-router-dom";
+import { useGetMe } from "../services/queries";
+import socket from "../Utils/socket";
+import { isequalto100 } from "../Utils/SequenceChecker";
 
-  type OperatorType = "+" | "-" | "*" | "/" | "";
-  type BoxType = "number" | "operator";
+type OperatorType = "+" | "-" | "*" | "/";
+type Box = {
+  id: number;
+  value: string;
+  type: "number" | "operator";
+  isFixed: boolean;
+  hasLeftParenthesis: boolean;
+  hasRightParenthesis: boolean;
+};
 
-  interface Box {
-    id: number;
-    value: string;
-    type: BoxType;
-    isFixed?: boolean;
-    hasLeftParenthesis?: boolean;
-    hasRightParenthesis?: boolean;
-  }
+type SequenceProps = {
+  sequence: number[];
+  handleScoreUpdate: () => void;
+};
 
-  interface SequenceProps {
-    sequence: string[];
-    handleScoreUpdate: () => void;
-  }
+const Sequence = ({ sequence, handleScoreUpdate }: SequenceProps) => {
+  const { id: roomId } = useParams();
+  const fixedOperators: OperatorType[] = ["+", "-", "*", "/"];
+  const { data: user } = useGetMe();
 
-  const generateBoxes=(sequence:string[])=>{
-      const newBoxes: Box[] = Array(sequence.length * 2 - 1)
+  const [boxes, setBoxes] = useState<Box[]>(() => {
+    const newBoxes: Box[] = Array(sequence.length * 2 - 1)
       .fill(null)
       .map((_, i) => {
         const isNumberBox = i % 2 === 0;
         return {
           id: i,
-          value: isNumberBox ? sequence[Math.floor(i / 2)] || "" : "",
+          value: isNumberBox ? sequence[Math.floor(i / 2)]?.toString() || "" : "",
           type: isNumberBox ? "number" : "operator",
           isFixed: isNumberBox,
           hasLeftParenthesis: false,
@@ -235,246 +238,256 @@ import { useParams } from "react-router-dom";
         };
       });
     return newBoxes;
-  }
+  });
 
-  const Sequence = ({ sequence, handleScoreUpdate }: SequenceProps) => {
-    const { id: roomId } = useParams();
-    const fixedOperators: OperatorType[] = ["+", "-", "*", "/"];
-    const { data: user } = useGetMe();
-    // console.log(sequence);
-    const [boxes, setBoxes] = useState<Box[]>(() => {
-      const newBoxes: Box[] = Array(sequence.length * 2 - 1)
-        .fill(null)
-        .map((_, i) => {
-          const isNumberBox = i % 2 === 0;
-          return {
-            id: i,
-            value: isNumberBox ? sequence[Math.floor(i / 2)] || "" : "",
-            type: isNumberBox ? "number" : "operator",
-            isFixed: isNumberBox,
-            hasLeftParenthesis: false,
-            hasRightParenthesis: false,
-          };
-        });
-      return newBoxes;
-    });
-    useEffect(()=>{
-      const newBoxes=generateBoxes(sequence);
-      setBoxes(newBoxes);
+  useEffect(() => {
+    const newBoxes = generateBoxes(sequence);
+    setBoxes(newBoxes);
+  }, [sequence]);
 
-    },[sequence])
-    const [operators, setOperators] = useState<OperatorType[]>(fixedOperators);
-    const [draggedOperator, setDraggedOperator] = useState<OperatorType | null>(
-      null
-    );
-    const [hoveredBoxIndex, setHoveredBoxIndex] = useState<number | null>(null);
-    const operatorRefs = useRef<(HTMLDivElement | null)[]>([]);
-    const boxesRef = useRef<(HTMLDivElement | null)[]>([]);
+  const [operators, setOperators] = useState<OperatorType[]>(fixedOperators);
+  const [draggedOperator, setDraggedOperator] = useState<OperatorType | null>(null);
+  const [hoveredBoxIndex, setHoveredBoxIndex] = useState<number | null>(null);
+  const operatorRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const boxesRef = useRef<(HTMLDivElement | null)[]>([]);
+  const [isDraggingOperator, setIsDraggingOperator] = useState(false);
 
-    const handleOperatorDrop = (index: number) => {
-      if (boxes[index].type === "operator" && draggedOperator) {
-        const newBoxes = [...boxes];
-        newBoxes[index] = {
-          ...newBoxes[index],
-          value: draggedOperator,
-        };
-        setBoxes(newBoxes);
-        setHoveredBoxIndex(index);
-      }
-    };
+  // Motion value and triggerShake
+  const x = useMotionValue(0);
 
-    const handleOperatorDelete = (index: number) => {
-      if (boxes[index].type === "operator") {
-        const newBoxes = [...boxes];
-        newBoxes[index] = {
-          ...newBoxes[index],
-          value: "",
-        };
-        setBoxes(newBoxes);
-      }
-    };
-
-    const toggleParenthesis = (index: number, side: "left" | "right") => {
-      if (boxes[index].type === "number") {
-        const newBoxes = [...boxes];
-        if (side === "left") {
-          newBoxes[index] = {
-            ...newBoxes[index],
-            hasLeftParenthesis: !newBoxes[index].hasLeftParenthesis,
-          };
-        } else {
-          newBoxes[index] = {
-            ...newBoxes[index],
-            hasRightParenthesis: !newBoxes[index].hasRightParenthesis,
-          };
-        }
-        setBoxes(newBoxes);
-      }
-    };
-
-    // Generate a mathematical expression string from the boxes
-    const generateMathExpression = () => {
-      let expression = "";
-      boxes.forEach((box) => {
-        if (box.hasLeftParenthesis) expression += "(";
-        expression += box.value;
-        if (box.hasRightParenthesis) expression += ")";
-      });
-
-      // console.log("Generated Expression:", expression);
-
-      // Check if the expression is valid and equal to 100
-      const isValid = isequalto100(expression);
-      if (user && user._id) {
-        socket.emit("mathExpression", {
-          expression,
-          playerId: user._id,
-          roomId
-        });
-      }
-      if(isValid)handleScoreUpdate();
-    };
-
-    // Call `generateMathExpression` whenever `boxes` changes
-    useEffect(() => {
-      generateMathExpression();
-    }, [boxes]);
-
-    return (
-        <div className=" flex flex-col items-center justify-center p-4">
-          <div className="rounded-xl p-8 flex flex-col ">
-            <div className="flex items-center gap- mb-12">
-              {boxes.map((box, index) => {
-                return (
-                  <motion.div
-                    key={box.id}
-                    ref={(el) => {
-                      boxesRef.current[index] = el;
-                    }}
-                    className={`relative border-blue-900 w-full rounded-lg flex items-center justify-center`}
-                    onHoverStart={() => {
-                      if (draggedOperator && box.type === "operator") {
-                        setHoveredBoxIndex(index);
-                      }
-                    }}
-                    onHoverEnd={() => {
-                      if (draggedOperator) {
-                        setHoveredBoxIndex(null);
-                      }
-                    }}
-                    onClick={() =>
-                      box.type === "operator" && handleOperatorDelete(index)
-                    }
-                  >
-                    {box.type === "number" && (
-                      <div className="size-11 relative group rounded-lg">
-                        {/* Left Parenthesis */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleParenthesis(index, "left");
-                          }}
-                          className={`absolute left-0 top-[45%] -translate-y-1/2 -translate-x-1 px-1 text-3xl font-bold cursor-pointer ${
-                            box.hasLeftParenthesis
-                              ? "text-[#00ffff]"
-                              : "text-transparent group-hover:text-[#6a6a6a]"
-                          }`}
-                        >
-                          (
-                        </button>
-
-                        {/* Number Value */}
-                        <div
-                          className={`w-full h-full flex flex-col items-center justify-center bg-transparent text-center text-3xl font-bold focus:outline-none text-[#e0e0e0]`}
-                        >
-                          {box.value}
-                        </div>
-
-                        {/* Right Parenthesis */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleParenthesis(index, "right");
-                          }}
-                          className={`absolute right-0 top-[45%] -translate-y-1/2 translate-x-1 px-1 text-3xl font-bold cursor-pointer ${
-                            box.hasRightParenthesis
-                              ? "text-[#00ffff]"
-                              : "text-transparent group-hover:text-[#6a6a6a]"
-                          }`}
-                        >
-                          )
-                        </button>
-                      </div>
-                    )}
-
-                    {box.type === "operator" && (
-                      <div className="w-4 h-7 rounded-lg border-[#3a3a3a] flex items-center justify-center text-2xl font-bold cursor-pointer text-[#918a8a]">
-                        {box.value}
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-center gap-4 mt-8">
-              {operators.map((operator, index) => (
-                <motion.div
-                  key={`${operator}-${index}`}
-                  ref={(el) => {
-                    operatorRefs.current[index] = el;
-                  }}
-                  drag
-                  dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-                  dragElastic={1}
-                  dragMomentum={false}
-                  animate={
-                    hoveredBoxIndex !== null && draggedOperator === operator
-                      ? {
-                          scale: 0,
-                          opacity: 0,
-                          transition: { duration: 0.2 },
-                        }
-                      : {
-                          scale: 1,
-                          opacity: 1,
-                          transition: { duration: 0.2 },
-                        }
-                  }
-                  className="w-12 h-12 bg-[#2a2a2a] rounded-lg flex items-center justify-center hover:bg-[#3a3a3a] transition-colors shadow-lg border border-[#3a3a3a]"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onDragStart={() => {
-                    setDraggedOperator(operator);
-                  }}
-                  onDragEnd={(event, _) => {
-                    boxesRef.current.forEach((boxElement, index) => {
-                      if (boxElement) {
-                        const rect = boxElement.getBoundingClientRect();
-                        if (
-                          event.clientX >= rect.left &&
-                          event.clientX <= rect.right &&
-                          event.clientY >= rect.top &&
-                          event.clientY <= rect.bottom &&
-                          boxes[index].type === "operator"
-                        ) {
-                          handleOperatorDrop(index);
-                        }
-                      }
-                    });
-                    setDraggedOperator(null);
-                    setHoveredBoxIndex(null);
-                  }}
-                >
-                  <span className="text-2xl font-bold text-[#e0e0e0]">
-                    {operator}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-    );
+  const triggerShake = () => {
+    animate(x, [0, -10, 10, -10, 10, 0], { duration: 0.4 });
   };
 
-  export default Sequence;
+  const hasAdjacentNumbers = (expression: string) => {
+    // This regex looks for digits directly followed by another digit,
+    // not separated by an operator or parenthesis
+    return /\d\(?\d/.test(expression);
+  };
+  const generateBoxes = (sequence: number[]): Box[] => {
+    return Array(sequence.length * 2 - 1)
+      .fill(null)
+      .map((_, i) => {
+        const isNumberBox = i % 2 === 0;
+        return {
+          id: i,
+          value: isNumberBox ? sequence[Math.floor(i / 2)].toString() : "",
+          type: isNumberBox ? "number" : "operator",
+          isFixed: isNumberBox,
+          hasLeftParenthesis: false,
+          hasRightParenthesis: false,
+        };
+      });
+  };
+
+  const handleOperatorDrop = (index: number) => {
+    if (boxes[index].type === "operator" && draggedOperator) {
+      const newBoxes = [...boxes];
+      newBoxes[index] = {
+        ...newBoxes[index],
+        value: draggedOperator,
+      };
+      setBoxes(newBoxes);
+      setHoveredBoxIndex(index);
+    }
+  };
+
+  const handleOperatorDelete = (index: number) => {
+    if (boxes[index].type === "operator") {
+      const newBoxes = [...boxes];
+      newBoxes[index] = {
+        ...newBoxes[index],
+        value: "",
+      };
+      setBoxes(newBoxes);
+    }
+  };
+
+  const toggleParenthesis = (index: number, side: "left" | "right") => {
+    if (boxes[index].type === "number") {
+      const newBoxes = [...boxes];
+      if (side === "left") {
+        newBoxes[index] = {
+          ...newBoxes[index],
+          hasLeftParenthesis: !newBoxes[index].hasLeftParenthesis,
+        };
+      } else {
+        newBoxes[index] = {
+          ...newBoxes[index],
+          hasRightParenthesis: !newBoxes[index].hasRightParenthesis,
+        };
+      }
+      setBoxes(newBoxes);
+    }
+  };
+
+  const generateMathExpression = () => {
+    let expression = "";
+    boxes.forEach((box) => {
+      if (box.hasLeftParenthesis) expression += "(";
+      expression += box.value;
+      if (box.hasRightParenthesis) expression += ")";
+    });
+
+    const isValid = isequalto100(expression);
+
+    if (user && user._id) {
+      socket.emit("mathExpression", {
+        expression,
+        playerId: user._id,
+        roomId,
+      });
+    }
+
+    if (isValid) {
+      handleScoreUpdate();
+    } else {
+      if (!hasAdjacentNumbers(expression)) {
+        triggerShake();
+      }
+    }
+  };
+
+  useEffect(() => {
+    generateMathExpression();
+  }, [boxes]);
+
+  return (
+    <div className="flex flex-col items-center justify-center p-4">
+      <div className="rounded-xl p-8 flex flex-col">
+        <motion.div className="flex items-center gap- mb-12" style={{ x }}>
+          {boxes.map((box, index) => {
+            return (
+              <motion.div
+                key={box.id}
+                ref={(el) => {
+                  boxesRef.current[index] = el;
+                }}
+                className={`relative w-full rounded-lg flex items-center justify-center ${
+                  index === hoveredBoxIndex ? "bg-[#2a2a2a] bg-opacity-30" : ""
+                }`}
+                onHoverStart={() => {
+                  if (draggedOperator && box.type === "operator") {
+                    setHoveredBoxIndex(index);
+                  }
+                }}
+                onHoverEnd={() => {
+                  if (draggedOperator) {
+                    setHoveredBoxIndex(null);
+                  }
+                }}
+                onClick={() =>
+                  box.type === "operator" && handleOperatorDelete(index)
+                }
+              >
+                {box.type === "number" && (
+                  <div className="size-11 relative group rounded-lg">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleParenthesis(index, "left");
+                      }}
+                      className={`absolute left-0 top-[45%] -translate-y-1/2 -translate-x-1 px-1 text-3xl font-bold cursor-pointer ${
+                        box.hasLeftParenthesis
+                          ? "text-[#00ffff]"
+                          : "text-transparent group-hover:text-[#6a6a6a]"
+                      }`}
+                    >
+                      (
+                    </button>
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-transparent text-center text-3xl font-bold focus:outline-none text-[#d9d7d7]">
+                      {box.value}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleParenthesis(index, "right");
+                      }}
+                      className={`absolute right-0 top-[45%] -translate-y-1/2 translate-x-1 px-1 text-3xl font-bold cursor-pointer ${
+                        box.hasRightParenthesis
+                          ? "text-[#00ffff]"
+                          : "text-transparent group-hover:text-[#6a6a6a]"
+                      }`}
+                    >
+                      )
+                    </button>
+                  </div>
+                )}
+
+                {box.type === "operator" && (
+                  <div
+                    className={`w-7.5 h-7.5 ${
+                      isDraggingOperator
+                        ? "border-dashed border border-main-green"
+                        : ""
+                    } rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer text-[#fffcfc]`}
+                  >
+                    {box.value}
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </motion.div>
+
+        <div className="flex justify-center gap-4 mt-8">
+          {operators.map((operator, index) => (
+            <motion.div
+              key={`${operator}-${index}`}
+              ref={(el) => {
+                operatorRefs.current[index] = el;
+              }}
+              drag
+              dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+              dragElastic={1}
+              dragMomentum={false}
+              animate={
+                hoveredBoxIndex !== null && draggedOperator === operator
+                  ? {
+                      scale: 0,
+                      opacity: 0,
+                      transition: { duration: 0.2 },
+                    }
+                  : {
+                      scale: 1,
+                      opacity: 1,
+                      transition: { duration: 0.2 },
+                    }
+              }
+              className="w-10 h-10 bg-[#2a2a2a] rounded-lg flex items-center justify-center hover:bg-[#3a3a3a] transition-colors shadow-lg border border-[#3a3a3a]"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onDragStart={() => {
+                setDraggedOperator(operator);
+                setIsDraggingOperator(true);
+              }}
+              onDragEnd={(event, _) => {
+                boxesRef.current.forEach((boxElement, index) => {
+                  if (boxElement) {
+                    const rect = boxElement.getBoundingClientRect();
+                    if (
+                      event.clientX >= rect.left &&
+                      event.clientX <= rect.right &&
+                      event.clientY >= rect.top &&
+                      event.clientY <= rect.bottom &&
+                      boxes[index].type === "operator"
+                    ) {
+                      handleOperatorDrop(index);
+                    }
+                  }
+                });
+                setDraggedOperator(null);
+                setHoveredBoxIndex(null);
+                setIsDraggingOperator(false);
+              }}
+            >
+              <span className="text-2xl font-bold text-[#e0e0e0]">{operator}</span>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Sequence;

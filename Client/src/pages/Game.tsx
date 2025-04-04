@@ -5,6 +5,7 @@ import Sequence from "./Sequence";
 import socket from "../Utils/socket";
 import { useGetMe } from "../services/queries";
 import axios from "../Utils/axios";
+import { useCreateDuel } from "../services/mutations";
 
 const Game = () => {
   const { id: roomId } = useParams(); // Room ID
@@ -22,8 +23,11 @@ const Game = () => {
   const [time, setTime] = useState();
   const [sequence, setSequence] = useState([]);
   const [isGameActive, setIsGameActive] = useState(false);
-  const [gameCanStart, setGameCanStart] = useState(false);  // Track if the game has started
-  
+  const [gameCanStart, setGameCanStart] = useState(false);  
+  const [gameEnded, setGameEnded] = useState(false);
+const [gameResultMessage, setGameResultMessage] = useState("");
+
+  const { mutate: createDuel } = useCreateDuel();
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -52,7 +56,7 @@ const Game = () => {
   
     useEffect(()=>{
       
-       socket.emit("joinRoom", { roomId: roomId, playerId:user._id });
+       socket.emit("joinRoom", { roomId: roomId, playerId:user._id,gameTime:20 });
        return () => {
         socket.off("joinRoom");
       };
@@ -84,9 +88,34 @@ const Game = () => {
     });
 
     // Handle game over
-    socket.on("gameOver", ({ message }) => {
-      setIsGameActive(false);
+    socket.on("gameOver", ({ message, room }) => {
+      console.log(opponentState);
+        createDuel(
+          {
+            player1Id: user._id,
+            player2Id: opponentState.opponent._id,
+            player1Score: score,
+            player2Score: opponentState.score,
+            duelTime: room.duelTime,
+          },
+          {
+            onSuccess: () => {
+              // Determine win/loss/draw
+              let resultMsg = "It's a draw!";
+              if (score > opponentState.score) resultMsg = "You won!";
+              else if (score < opponentState.score) resultMsg = "You missed this time!";
+              setGameResultMessage(resultMsg);
+              setGameEnded(true);
+            },
+            onError: () => {
+              setGameResultMessage("Error saving duel. Please try again.");
+              setGameEnded(true);
+            },
+          }
+        );
+      // setIsGameActive(false);
     });
+    
 
     // Handle room update, fetch opponent details and update score
     socket.on("roomUpdate", (room) => {
@@ -133,7 +162,29 @@ const Game = () => {
 
   return (
     <>
-      {isGameActive ? (
+    {
+      gameEnded?
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a1a1a] text-white px-4">
+        <h1 className="text-4xl font-bold mb-6">{gameResultMessage}</h1>
+        <div className="flex gap-10 items-center justify-center text-center">
+          <div>
+            <p className="text-xl font-semibold mb-2">You</p>
+            <p className="text-main-green text-2xl font-bold">{score}</p>
+          </div>
+          <span className="text-3xl font-bold">vs</span>
+          <div>
+            <p className="text-xl font-semibold mb-2">{opponentState.opponent?.name}</p>
+            <p className="text-main-green text-2xl font-bold">{opponentState.score}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="mt-8 bg-main-green text-black px-6 py-2 rounded-xl font-semibold hover:bg-opacity-80 transition"
+        >
+          Play Again
+        </button>
+      </div>: 
+      isGameActive ? (
         <div className="min-h-screen bg-main-black pt-10 max-md:px-5 flex flex-col items-center justify-start">
           <div className="flex flex-col h-full w-[50%] max-w-full max-md:w-full">
             <div className="w-full flex items-center justify-between">
@@ -180,7 +231,9 @@ const Game = () => {
             </div>
           )}
         </div>
-      )}
+      )
+    }
+     
     </>
   );
 };
