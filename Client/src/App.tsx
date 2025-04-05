@@ -1,5 +1,5 @@
 import Login from "./pages/Login"
-import {Routes, Route, Navigate } from "react-router-dom";
+import {Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Game from "./pages/Game";
 import Wait from "./pages/Wait";
