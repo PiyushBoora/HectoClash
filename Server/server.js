@@ -67,7 +67,7 @@ function emitRoomsUpdate() {
     gameStarted: room.gameStarted
   }));
   io.emit("roomsUpdate", { rooms: activeRooms });
-}
+} 
 
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);

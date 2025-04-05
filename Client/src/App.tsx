@@ -7,10 +7,12 @@ import IndividualMatch from "./pages/IndividualMatch";
 import Spectator from "./pages/spectator";
 import Practice from "./pages/Practice";
 import Analysis from "./pages/Analysis";
+import Header from "./components/Header";
 function App() {
 
   return (
     <main>
+        <Header/>
       <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />

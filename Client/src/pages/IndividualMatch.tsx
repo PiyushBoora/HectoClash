@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Timer, Eye } from "lucide-react";
 import socket from "../Utils/socket";
 import { useGetUserById } from "../services/queries";
 import SpectatingSequence from "../components/SpectatingSequence";
 
 const SpectatorMode = () => {
+  const navigate=useNavigate();
   const { id: roomId } = useParams();
   const [time, setTime] = useState(0);
   const [isGameActive, setIsGameActive] = useState(false);
@@ -22,6 +23,7 @@ const SpectatorMode = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+
   useEffect(() => {
     socket.emit("spectatorJoin");
 
@@ -32,7 +34,11 @@ const SpectatorMode = () => {
       if (room) {
         console.log('room',room);
         setIsGameActive(!!room.gameStarted);
-        if (room.timer !== undefined) setTime(room.timer);
+        if (room.timer !== undefined){
+          if(room.timer<=1){
+            navigate('/spectate');
+          }
+          setTime(room.timer);}
 
         if (room.players?.length > 0) {
           setPlayers({
@@ -75,7 +81,7 @@ const SpectatorMode = () => {
   }
 
   return (
-    <div className="min-h-screen bg-main-black pt-10 max-md:px-5 flex flex-col ">
+    <div className="min-h-screen bg-main-black pt-30 max-md:px-5 flex flex-col ">
       {/* Spectator Badge */}
       <div className="absolute top-4 right-4 bg-[#2a2a2a] px-3 py-1 rounded-full flex items-center gap-2">
         <Eye className="size-4 text-[#00ffff]" />

@@ -2,22 +2,28 @@ import { motion } from "framer-motion";
 import { Brain, Trophy, Swords, BookOpen } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useGetMe } from "../services/queries";
+import { useEffect, useState } from "react";
 
 const Header = () => {
   const location = useLocation();
   const { data: user } = useGetMe();
-
+  const[isLoginPage,setIsLoginPage]=useState(false);
   const navItems = [
     { path: "/dashboard", icon: Trophy, label: "Dashboard" },
     { path: "/practice", icon: BookOpen, label: "Practice" },
     { path: "/duel", icon: Swords, label: "Duel" },
   ];
-
+  useEffect(()=>{
+    console.log(location)
+    if(location.pathname==='/login'){
+      setIsLoginPage(true);
+    }
+  },[location.pathname])
   return (
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a1a]/80 backdrop-blur-lg border-b border-[#2a2a2a]"
+      className={`fixed top-0 left-0 right-0 z-50 bg-[#1a1a1a]/80 backdrop-blur-lg border-b border-[#2a2a2a] ${isLoginPage?'hidden':'block'}`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
