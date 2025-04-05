@@ -203,7 +203,7 @@ const [gameResultMessage, setGameResultMessage] = useState("");
         </button>
       </div>: 
       isGameActive ? (
-        <div className="min-h-screen bg-main-black pt-10 max-md:px-5 flex flex-col items-center justify-start">
+        <div className="min-h-screen bg-main-black pt-30 max-md:px-5 flex flex-col items-center justify-start">
           <div className="flex flex-col h-full w-[50%] max-w-full max-md:w-full">
             <div className="w-full flex items-center justify-between">
               <div className="flex flex-col items-center gap-4">
