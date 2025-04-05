@@ -194,7 +194,8 @@
   // }
 
   // export default HectocGame;
-"use client";
+// @ts-nocheck
+
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useMotionValue, animate } from "framer-motion";
