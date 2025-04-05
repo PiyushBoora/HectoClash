@@ -4,11 +4,11 @@ import Dashboard from "./pages/Dashboard";
 import Game from "./pages/Game";
 import Wait from "./pages/Wait";
 import IndividualMatch from "./pages/IndividualMatch";
-import Spectator from "./pages/spectator";
 import Practice from "./pages/Practice";
 import Analysis from "./pages/Analysis";
 import Header from "./components/Header";
 import RandomMatch from "./pages/RandomMatch";
+import Spectator from "./pages/Spectator";
 function App() {
 
   return (

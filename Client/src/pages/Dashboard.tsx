@@ -9,7 +9,6 @@ import {
   Target,
   TrendingUp,
 } from "lucide-react";
-import socket from "../Utils/socket";
 import { useGetMe, useGetLeaderboard } from "../services/queries";
 import {
   BarChart,
@@ -23,7 +22,7 @@ import {
 
 const Dashboard = () => {
   const [duelId, setDuelId] = useState<string>("");
-  const [showCopied, setShowCopied] = useState(false);
+  // const [showCopied, setShowCopied] = useState(false);
   const [isJoiningDuel, setIsJoiningDuel] = useState(false);
   const { data: user, isLoading, isError } = useGetMe();
   const { data: leaderboardData, isLoading: isLeaderboardLoading } = useGetLeaderboard();
@@ -52,11 +51,7 @@ const Dashboard = () => {
     setDuelId(newDuelId);
     navigate(`/game/${newDuelId}`);
   };
-  const handleRandomMatch=()=>{
-    const newDuelId = generateDuelId();
-    setDuelId(newDuelId);
-    navigate(`/random/match/${newDuelId}`);
-  }
+
   const handleJoinDuel = () => {
     if (duelId.trim()) {
       navigate(`/game/${duelId}`);
@@ -244,7 +239,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {leaderboardData.map((player, index) => (
+                    {leaderboardData.map((player:any, index:number) => (
                       <motion.tr
                         key={player._id}
                         initial={{ opacity: 0 }}
