@@ -106,7 +106,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#121212] to-[#1d1d1d] pt-10 px-4 sm:px-6 lg:px-8 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-[#121212] to-[#1d1d1d] pt-30 px-4 sm:px-6 lg:px-8 text-white">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Stats Section */}
         <motion.div
