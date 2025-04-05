@@ -1,11 +1,11 @@
 import { motion } from "motion/react"
 import { Brain } from 'lucide-react';
-// const BACKEND_URL='http://localhost:8080'
-const BACKEND_URL='https://hectoclash.onrender.com';
+import { BASE_URL } from "../Utils/axios";
+
 const Login = () => {
   const handleGoogleLogin = () => {
     // Implement Google login logic here
-    window.location.href = `${BACKEND_URL}/api/auth/google`;
+    window.location.href = `${BASE_URL}/api/auth/google`;
 };
 
   return (
