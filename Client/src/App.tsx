@@ -9,6 +9,8 @@ import Analysis from "./pages/Analysis";
 import Header from "./components/Header";
 import RandomMatch from "./pages/RandomMatch";
 import Spectator from "./pages/Spectator";
+
+import About from "./pages/About";
 function App() {
 
   return (
@@ -19,6 +21,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/game/:id" element={<Game />} />
           <Route path="/wait/:id" element={<Wait />} />
+          <Route path="/about" element={<About />} />
           <Route path="/spectate" element={<Spectator/>}/>
           <Route path="/spectate/:id" element={<IndividualMatch/>}/>
           <Route path="/practice" element={<Practice />} />
