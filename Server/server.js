@@ -113,7 +113,9 @@ io.on("connection", (socket) => {
   // Listen for mathExpression events
   socket.on("mathExpression", ({ expression, playerId,roomId }) => {
     // Find which room this player is in
-    
+    if(!roomId){
+      return
+    }
       const player = rooms[roomId].players.find(p => p.playerId === playerId);
       if (player) {
         // Update the player's current expression
