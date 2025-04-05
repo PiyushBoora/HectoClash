@@ -85,11 +85,11 @@ const Header = () => {
                 animate={{ scale: 1 }}
                 className="flex items-center space-x-3"
               >
-                <img
+               {user.profileImage&& <img
                   src={user.profileImage}
                   alt={user.name}
                   className="h-8 w-8 rounded-full border-2 border-[#00ffff]"
-                />
+                />}
                 <span className="text-white font-medium">{user.name}</span>
               </motion.div>
             )}

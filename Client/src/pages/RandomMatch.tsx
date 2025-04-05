@@ -6,9 +6,12 @@ import socket from "../Utils/socket";
 import { useGetMe } from "../services/queries";
 import axios from "../Utils/axios";
 import { useCreateDuel } from "../services/mutations";
-
-const Game = () => {
-  const { id: roomId } = useParams(); // Room ID
+const generateDuelId = () => {
+    return Math.random().toString(36).substring(2, 10).toUpperCase();
+  };
+//   const roomId=generateDuelId(); // Room ID
+let id=''; 
+const RandomMatch = () => {
   const navigate = useNavigate();
   const { data: user, isLoading: userFetching, isError: userError } = useGetMe();
   const [score,setScore]=useState(0);
@@ -34,7 +37,7 @@ const [gameResultMessage, setGameResultMessage] = useState("");
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const fetchOpponent = async (userId) => {
+  const fetchOpponent = async (userId,roomId) => {
     console.log(userId);
     if (!userId) return;
     setOpponentState((prev) => ({ ...prev, isLoading: true, isError: false }));
@@ -45,7 +48,7 @@ const [gameResultMessage, setGameResultMessage] = useState("");
         throw new Error(response.data.message || "Failed to fetch user");
       }
       setOpponentState((prev) => ({ ...prev, opponent: response.data.user, isLoading: false }));
-
+      console.log(response);
       // Emit playerReady event when opponent is fetched successfully
       socket.emit("playerReady", { roomId, playerId: user?._id });
 
@@ -56,15 +59,15 @@ const [gameResultMessage, setGameResultMessage] = useState("");
   
     useEffect(()=>{
       
-       socket.emit("joinRoom", { roomId: roomId, playerId:user._id,gameTime:120 });
-       return () => {
-        socket.off("joinRoom");
+       socket.emit("joinMatchRoom", { playerId:user._id });
+       return () => {   
+        socket.off("joinMatchRoom");
       };
     },[])
-    console.log(opponentState);
+    // console.log(opponentState);
   useEffect(() => {
     // Listen for both players being ready
-    socket.on("bothPlayersReady", () => {
+    socket.on("bothPlayersReady", ({roomId}) => {
       console.log("Both players are ready, starting game...");
       setGameCanStart(true);
       socket.emit("startGame", { roomId });
@@ -90,44 +93,45 @@ const [gameResultMessage, setGameResultMessage] = useState("");
 
     // Handle game over
     socket.on("gameOver", ({ message, room }) => {
-      console.log(room);
-    
-      const isPlayer1 = room.players[0].playerId === user._id;
-      const currentPlayer = isPlayer1 ? room.players[0] : room.players[1];
-      const opponentPlayer = isPlayer1 ? room.players[1] : room.players[0];
-    
-      createDuel(
-        {
-          player1Id: room.players[0].playerId,
-          player2Id: room.players[1].playerId,
-          player1Score: room.players[0].score,
-          player2Score: room.players[1].score,
-          duelTime: room.duelTime,
-        },
-        {
-          onSuccess: () => {
-            // Compare currentPlayer and opponent scores
-            let resultMsg = "It's a draw!";
-            if (currentPlayer.score > opponentPlayer.score) resultMsg = "You won!";
-            else if (currentPlayer.score < opponentPlayer.score) resultMsg = "You missed this time!";
-            setGameResultMessage(resultMsg);
-            setGameEnded(true);
+        console.log(room);
+      
+        const isPlayer1 = room.players[0].playerId === user._id;
+        const currentPlayer = isPlayer1 ? room.players[0] : room.players[1];
+        const opponentPlayer = isPlayer1 ? room.players[1] : room.players[0];
+      
+        createDuel(
+          {
+            player1Id: room.players[0].playerId,
+            player2Id: room.players[1].playerId,
+            player1Score: room.players[0].score,
+            player2Score: room.players[1].score,
+            duelTime: room.duelTime,
           },
-          onError: () => {
-            setGameResultMessage("Error saving duel. Please try again.");
-            setGameEnded(true);
-          },
-        }
-      );
-    });
-    
+          {
+            onSuccess: () => {
+              // Compare currentPlayer and opponent scores
+              let resultMsg = "It's a draw!";
+              if (currentPlayer.score > opponentPlayer.score) resultMsg = "You won!";
+              else if (currentPlayer.score < opponentPlayer.score) resultMsg = "You missed this time!";
+              setGameResultMessage(resultMsg);
+              setGameEnded(true);
+            },
+            onError: () => {
+              setGameResultMessage("Error saving duel. Please try again.");
+              setGameEnded(true);
+            },
+          }
+        );
+      });
+      
 
     // Handle room update, fetch opponent details and update score
     socket.on("roomUpdate", (room) => {
-      console.log(room);
+      console.log(user._id);
       const otherPlayer = room.players.find((p) => p.playerId !== user?._id);
       if (otherPlayer) {
-        fetchOpponent(otherPlayer.playerId);
+        id=room.roomId;
+        fetchOpponent(otherPlayer.playerId,room.roomId);
         setOpponentState((prev) => ({ ...prev, score: otherPlayer.score }));
       }
     });
@@ -154,7 +158,7 @@ const [gameResultMessage, setGameResultMessage] = useState("");
   const handleScoreUpdate = () => {
     const newScore = score + 1;
     setScore(newScore);
-    socket.emit("updateScore", { roomId, score: newScore });
+    socket.emit("updateScore", { roomId:id, score: newScore });
   };
 
   if (isGameActive && (userFetching || opponentState.isLoading || opponentState.isError || userError)) {
@@ -235,13 +239,13 @@ const [gameResultMessage, setGameResultMessage] = useState("");
         </div>
       ) : (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a1a1a] text-[#e0e0e0]">
-          <h1 className="text-3xl font-bold">Waiting for Opponent...</h1>
-          {roomId && (
+          <h1 className="text-3xl font-bold">Searching for Opponent...</h1>
+          {/* {roomId && (
             <div className="mt-4">
               <p className="text-xl">Your Duel ID:</p>
               <span className="text-[#00ffff] font-mono text-2xl">{roomId}</span>
             </div>
-          )}
+          )} */}
         </div>
       )
     }
@@ -250,4 +254,4 @@ const [gameResultMessage, setGameResultMessage] = useState("");
   );
 };
 
-export default Game;
+export default RandomMatch;

@@ -8,6 +8,7 @@ import Spectator from "./pages/spectator";
 import Practice from "./pages/Practice";
 import Analysis from "./pages/Analysis";
 import Header from "./components/Header";
+import RandomMatch from "./pages/RandomMatch";
 function App() {
 
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/spectate/:id" element={<IndividualMatch/>}/>
           <Route path="/practice" element={<Practice />} />
           <Route path="/analysis/:gameId" element={<Analysis />} />
+          <Route path="/random/match" element={<RandomMatch />} />
         </Routes>
      
     </main>

@@ -34,9 +34,9 @@ const passport = require('passport');
 
 // Handle Google Callback after authentication
  const googleCallback = (req, res, next) => {
-  passport.authenticate('google', { failureRedirect: 'http://localhost:5173/login' }, (err, user) => {
+  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/login`}, (err, user) => {
     if (err || !user) {
-      return res.redirect('http://localhost:5173/login');
+      return res.redirect(`${process.env.FRONTEND_URL}/login`);
     }
     console.log(user);
     // Set cookie with MongoDB userId
@@ -45,7 +45,7 @@ const passport = require('passport');
     // Optional: you can also log the user in via session if needed
     req.login(user, (err) => {
       if (err) return next(err);
-      return res.redirect('http://localhost:5173/dashboard');
+      return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
     });
   })(req, res, next);
 };

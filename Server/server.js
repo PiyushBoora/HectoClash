@@ -1,3 +1,4 @@
+const { v4: uuidv4 } = require('uuid'); // Ensure this is at the top
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -72,12 +73,52 @@ function emitRoomsUpdate() {
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  socket.on('randomMatchRoomJoin',({playerId})=>{
-   if(randomJoiners.length>1){
-        
-   }
 
-  })
+
+
+  
+  socket.on('joinMatchRoom', ({ playerId }) => {
+    console.log(`${playerId} is trying to join a match`);
+  
+    if (randomJoiners.length > 0) {
+      const opponent = randomJoiners.shift(); // Take out the first waiting player
+      const roomId = uuidv4(); // Generate a new unique room ID
+  
+      // Create the room in your rooms object
+      rooms[roomId] = {
+        players: [],
+        timer: 120,
+        duelTime: GAME_TIME,
+        gameStarted: false,
+        roomId:roomId
+      };
+  
+      // Add both players to the room
+      [opponent, { socket, playerId }].forEach(({ socket, playerId }) => {
+        rooms[roomId].players.push({
+          id: socket.id,
+          playerId,
+          score: 0,
+          sequenceIndex: 0,
+          ready: false,
+          currentExpression: "",
+        });
+  
+        socket.join(roomId);
+        socket.emit('joinedMatchRoom', { roomId });
+      });
+  
+      console.log(`Room ${roomId} created for ${opponent.playerId} and ${playerId}`);
+      io.to(roomId).emit("roomUpdate", rooms[roomId]);
+      emitRoomsUpdate();
+    } else {
+      // Add current player to the waiting queue
+      randomJoiners.push({ socket, playerId });
+      console.log(`${playerId} is waiting for an opponent`);
+    }
+  });
+  
+
 
   // Add handler for spectator connection
   socket.on("spectatorJoin", () => {
@@ -87,7 +128,7 @@ io.on("connection", (socket) => {
 
   socket.on("joinRoom", ({ roomId, playerId,gameTime }) => {
     if (!rooms[roomId]) {
-      rooms[roomId] = { players: [], timer: gameTime,duelTime:GAME_TIME, gameStarted: false };
+      rooms[roomId] = { players: [], timer: gameTime,duelTime:GAME_TIME, gameStarted: false,roomId:roomId };
     }
 
     if (rooms[roomId].players.length < 2) {
@@ -113,7 +154,7 @@ io.on("connection", (socket) => {
   // Listen for mathExpression events
   socket.on("mathExpression", ({ expression, playerId,roomId }) => {
     // Find which room this player is in
-    
+      if(!roomId)return;
       const player = rooms[roomId].players.find(p => p.playerId === playerId);
       if (player) {
         // Update the player's current expression
@@ -125,6 +166,7 @@ io.on("connection", (socket) => {
 
   // When a player is ready
   socket.on("playerReady", ({ roomId, playerId }) => {
+    console.log(roomId,playerId);
     if (rooms[roomId]) {
       const player = rooms[roomId].players.find((p) => p.playerId === playerId);
       if (player) {
@@ -132,7 +174,7 @@ io.on("connection", (socket) => {
 
         // If both players are ready, emit `bothPlayersReady`
         if (rooms[roomId].players.length === 2 && rooms[roomId].players.every(p => p.ready)) {
-          io.to(roomId).emit("bothPlayersReady", { message: "Both players are ready. Start the game!" });
+          io.to(roomId).emit("bothPlayersReady", { message: "Both players are ready. Start the game!",roomId });
         }
       }
     }

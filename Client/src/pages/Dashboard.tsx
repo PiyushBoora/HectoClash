@@ -52,7 +52,11 @@ const Dashboard = () => {
     setDuelId(newDuelId);
     navigate(`/game/${newDuelId}`);
   };
-
+  const handleRandomMatch=()=>{
+    const newDuelId = generateDuelId();
+    setDuelId(newDuelId);
+    navigate(`/random/match/${newDuelId}`);
+  }
   const handleJoinDuel = () => {
     if (duelId.trim()) {
       navigate(`/game/${duelId}`);
@@ -167,6 +171,15 @@ const Dashboard = () => {
               >
                 <Target className="w-5 h-5" />
                 Practice Mode
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate("/random/match")}
+                className="w-full flex items-center justify-center gap-2 bg-[#3a3a3a] text-[#e0e0e0] px-6 py-3 rounded-lg font-semibold hover:bg-[#4a4a4a] transition-colors"
+              >
+                <Target className="w-5 h-5" />
+                Random Join
               </motion.button>
             </div>
           </div>

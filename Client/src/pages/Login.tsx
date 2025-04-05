@@ -1,10 +1,10 @@
 import { motion } from "motion/react"
 import { Brain } from 'lucide-react';
-
+const BACKEND_URL='http://localhost:8080'
 const Login = () => {
   const handleGoogleLogin = () => {
     // Implement Google login logic here
-    window.location.href = "http://localhost:8080/api/auth/google";
+    window.location.href = `${BACKEND_URL}/api/auth/google`;
 };
 
   return (
