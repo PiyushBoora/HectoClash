@@ -21,7 +21,7 @@ const server = http.createServer(app);
 
 app.use(
   cors({
-    origin: ["https://humanchain.ai", "http://localhost:5173", "http://localhost:4173"],
+    origin: ["http://localhost:5173", "https://hectoclash-1.onrender.com"],
     methods: ["GET", "PATCH", "POST", "DELETE", "PUT"],
     credentials: true,
   })
