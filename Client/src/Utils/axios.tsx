@@ -1,6 +1,7 @@
 import axios from "axios";
 
-export const BASE_URL="http://localhost:8080"
+// export const BASE_URL="http://localhost:8080"
+export const BASE_URL="https://hectoclash.onrender.com"
 const axiosInstance = axios.create({ baseURL: BASE_URL });
 axios.interceptors.request.use(request => {
   console.log('Starting Request', request)
