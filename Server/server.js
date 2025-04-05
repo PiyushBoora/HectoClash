@@ -9,6 +9,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const connectToDB = require('./configs/conn');
+const { getRandomQuestions } = require('./data/RandomSequences');
 
 dotenv.config();
 require('./configs/passport');
@@ -139,19 +140,21 @@ io.on("connection", (socket) => {
 
   // Start game when frontend emits "startGame"
   socket.on("startGame", ({ roomId }) => {
-    console.log(rooms[roomId]);
     if (rooms[roomId] && rooms[roomId].players.length === 2 && !rooms[roomId].gameStarted) {
       console.log(`Game started in room: ${roomId}`);
       
-      // Set a flag to indicate the game has started
       rooms[roomId].gameStarted = true;
-      
-      // Start game timer
       startGameTimer(roomId);
-
+  
+      // Generate dynamic sequences for this game session
+      const sequencesPerPlayer = getRandomQuestions(10); // You can adjust the count
+  
+      // Store the sequences inside room for consistent access
+      rooms[roomId].sequences = sequencesPerPlayer;
+  
       // Send the first sequence to each player
       rooms[roomId].players.forEach((player) => {
-        const initialSequence = sequences[player.sequenceIndex];
+        const initialSequence = sequencesPerPlayer[player.sequenceIndex];
         io.to(player.id).emit("GameStarted", {
           message: "Game Starting!",
           sequence: initialSequence,
@@ -159,6 +162,7 @@ io.on("connection", (socket) => {
       });
     }
   });
+  
 
   socket.on("updateScore", ({ roomId, score }) => {
     if (rooms[roomId]) {
@@ -172,12 +176,13 @@ io.on("connection", (socket) => {
         emitRoomsUpdate(); // Emit update to spectators
 
         // Check if there's a next sequence
-        if (player.sequenceIndex < sequences.length) {
-          const nextSequence = sequences[player.sequenceIndex];
+        if (player.sequenceIndex < rooms[roomId].sequences.length) {
+          const nextSequence = rooms[roomId].sequences[player.sequenceIndex];
           io.to(socket.id).emit("nextSequence", { sequence: nextSequence });
         } else {
-          io.to(socket.id).emit("gameOver", { message: "No more sequences!",room:rooms[roomId] });
+          io.to(socket.id).emit("gameOver", { message: "No more sequences!", room: rooms[roomId] });
         }
+        
       }
     }
   });
