@@ -1,9 +1,7 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { Swords, Users, Trophy, Timer, Target, TrendingUp, X, ChevronRight, Eye, Shuffle, PlusCircle } from "lucide-react"
+import { Swords, Users, Trophy, Timer, Target, TrendingUp, X, ChevronRight, Eye, PlusCircle } from "lucide-react"
 import { useGetMe, useGetLeaderboard } from "../services/queries"
 import { isequalto100 } from "../Utils/SequenceChecker"
 
