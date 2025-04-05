@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import axios from '../Utils/axios';
+import axios from '../../Client/src/Utils/axios';
 import { useNavigate } from 'react-router-dom';
 
 export const useGetMe = () => {

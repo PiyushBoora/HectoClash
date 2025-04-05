@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Timer, ArrowRight, BarChart2 } from "lucide-react";
+import { Timer } from "lucide-react";
 import Sequence from "./Sequence";
 import { getRandomQuestions } from "../data/questions";
 import axios from "../Utils/axios";
@@ -20,7 +20,6 @@ interface PracticeStats {
   timeSpent: number[];
   correctAnswers: number;
   totalQuestions: number;
-  solutions: string[];
 }
 
 const Practice = () => {
@@ -35,13 +34,12 @@ const Practice = () => {
     timeSpent: [],
     correctAnswers: 0,
     totalQuestions: 0,
-    solutions: [],
   });
-  const [solutions, setSolutions] = useState([]);
+  const [solutions, setSolutions] = useState<any[][]>([]);
   const [questions, setQuestions] = useState<string[][]>([]);
 
   const handleStartGame = async (minutes: number) => {
-    const selectedQuestions = getRandomQuestions(5);
+    const selectedQuestions = getRandomQuestions(10);
     setQuestions(selectedQuestions);
     setSelectedTime(minutes);
     setTimeRemaining(minutes * 60);
@@ -53,17 +51,21 @@ const Practice = () => {
       timeSpent: [],
       correctAnswers: 0,
       totalQuestions: 0,
-      solutions: [],
     });
+    setSolutions([]);
 
-    // Get solutions for the first sequence
     try {
-      const response = await axios.post('/api/game/solutions', { sequence: selectedQuestions[0] });
+      const response = await axios.post('/api/game/solutions', {
+        sequence: selectedQuestions[0],
+      });
       if (response.data.success) {
-        setSolutions(response.data.solutions);
+        setSolutions([response.data.solutions]);
+      } else {
+        setSolutions([[]]);
       }
     } catch (error) {
-      console.error('Failed to fetch solutions:', error);
+      console.error("Failed to fetch solutions:", error);
+      setSolutions([[]]);
     }
   };
 
@@ -74,20 +76,25 @@ const Practice = () => {
       correctAnswers: prev.correctAnswers + 1,
       timeSpent: [...prev.timeSpent, selectedTime! * 60 - timeRemaining],
     }));
-    
+
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex((prev) => prev + 1);
-      const nextSequence = questions[questionIndex + 1];
+      const nextIndex = questionIndex + 1;
+      const nextSequence = questions[nextIndex];
+      setQuestionIndex(nextIndex);
       setCurrentSequence(nextSequence);
 
-      // Get solutions for the next sequence
       try {
-        const response = await axios.post('/api/game/solutions', { sequence: nextSequence });
+        const response = await axios.post('/api/game/solutions', {
+          sequence: nextSequence,
+        });
         if (response.data.success) {
-          setSolutions(response.data.solutions);
+          setSolutions((prev) => [...prev, response.data.solutions]);
+        } else {
+          setSolutions((prev) => [...prev, []]);
         }
       } catch (error) {
-        console.error('Failed to fetch solutions:', error);
+        console.error("Failed to fetch solutions:", error);
+        setSolutions((prev) => [...prev, []]);
       }
     }
   };
@@ -124,9 +131,7 @@ const Practice = () => {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
+      transition: { staggerChildren: 0.1 },
     },
   };
 
@@ -147,35 +152,23 @@ const Practice = () => {
             exit={{ opacity: 0 }}
             className="max-w-4xl mx-auto"
           >
-            <motion.h1
-              variants={item}
-              className="text-3xl font-bold text-white text-center mb-8"
-            >
+            <motion.h1 variants={item} className="text-3xl font-bold text-white text-center mb-8">
               Practice Mode
             </motion.h1>
-            <motion.p
-              variants={item}
-              className="text-[#918a8a] text-center mb-12"
-            >
-              Select your practice duration and challenge yourself to solve as many
-              sequences as possible!
+            <motion.p variants={item} className="text-[#918a8a] text-center mb-12">
+              Select your practice duration and challenge yourself!
             </motion.p>
-            <motion.div
-              variants={item}
-              className="grid grid-cols-2 md:grid-cols-3 gap-4"
-            >
+            <motion.div variants={item} className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {timerOptions.map((minutes) => (
                 <motion.button
                   key={minutes}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleStartGame(minutes)}
-                  className="bg-[#2a2a2a] rounded-xl p-6 flex flex-col items-center justify-center gap-2 hover:bg-[#3a3a3a] transition-colors"
+                  className="bg-[#2a2a2a] rounded-xl p-6 flex flex-col items-center gap-2 hover:bg-[#3a3a3a] transition-colors"
                 >
                   <Timer className="w-8 h-8 text-[#00ffff]" />
-                  <span className="text-2xl font-bold text-white">
-                    {minutes} min
-                  </span>
+                  <span className="text-2xl font-bold text-white">{minutes} min</span>
                 </motion.button>
               ))}
             </motion.div>
@@ -183,21 +176,13 @@ const Practice = () => {
         )}
 
         {isGameStarted && (
-          <motion.div
-            key="game"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="max-w-4xl mx-auto"
-          >
+          <motion.div key="game" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center gap-4">
                 <div className="bg-[#2a2a2a] rounded-lg p-3">
                   <Timer className="w-6 h-6 text-[#00ffff]" />
                 </div>
-                <span className="text-2xl font-bold text-white">
-                  {formatTime(timeRemaining)}
-                </span>
+                <span className="text-2xl font-bold text-white">{formatTime(timeRemaining)}</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-[#918a8a]">Score:</span>
@@ -207,7 +192,7 @@ const Practice = () => {
             {currentSequence.length > 0 && (
               <Sequence
                 sequence={currentSequence}
-                solutions={solutions}
+                solutions={solutions[questionIndex] || []}
                 handleScoreUpdate={handleScoreUpdate}
               />
             )}
@@ -215,52 +200,31 @@ const Practice = () => {
         )}
 
         {showAnalysis && (
-          <motion.div
-            key="analysis"
-            variants={container}
-            initial="hidden"
-            animate="show"
-            exit={{ opacity: 0 }}
-            className="max-w-4xl mx-auto"
-          >
-            <motion.h2
-              variants={item}
-              className="text-3xl font-bold text-white text-center mb-8"
-            >
+          <motion.div key="analysis" variants={container} initial="hidden" animate="show" exit={{ opacity: 0 }} className="max-w-4xl mx-auto">
+            <motion.h2 variants={item} className="text-3xl font-bold text-white text-center mb-8">
               Practice Analysis
             </motion.h2>
 
-            <motion.div
-              variants={item}
-              className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12"
-            >
+            <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
               <div className="bg-[#2a2a2a] rounded-xl p-6">
-                <h3 className="text-xl font-bold text-white mb-4">
-                  Performance Summary
-                </h3>
+                <h3 className="text-xl font-bold text-white mb-4">Performance Summary</h3>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between">
                     <span className="text-[#918a8a]">Correct Answers:</span>
-                    <span className="text-white font-bold">
-                      {stats.correctAnswers}/{stats.totalQuestions}
-                    </span>
+                    <span className="text-white font-bold">{stats.correctAnswers}/{stats.totalQuestions}</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between">
                     <span className="text-[#918a8a]">Accuracy:</span>
                     <span className="text-white font-bold">
-                      {Math.round(
-                        (stats.correctAnswers / stats.totalQuestions) * 100
-                      )}
-                      %
+                      {Math.round((stats.correctAnswers / stats.totalQuestions) * 100)}%
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#918a8a]">Average Time:</span>
+                  <div className="flex justify-between">
+                    <span className="text-[#918a8a]">Avg Time:</span>
                     <span className="text-white font-bold">
                       {stats.timeSpent.length > 0
                         ? `${Math.round(
-                            stats.timeSpent.reduce((a, b) => a + b, 0) /
-                              stats.timeSpent.length
+                            stats.timeSpent.reduce((a, b) => a + b, 0) / stats.timeSpent.length
                           )}s`
                         : "N/A"}
                     </span>
@@ -269,21 +233,17 @@ const Practice = () => {
               </div>
 
               <div className="bg-[#2a2a2a] rounded-xl p-6">
-                <h3 className="text-xl font-bold text-white mb-4">
-                  Time Distribution
-                </h3>
+                <h3 className="text-xl font-bold text-white mb-4">Time Distribution</h3>
                 <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats.timeSpent.map((time, index) => ({
-                      question: `Q${index + 1}`,
-                      time,
-                    }))}>
+                    <BarChart
+                      data={stats.timeSpent.map((time, index) => ({
+                        question: `Q${index + 1}`,
+                        time,
+                      }))}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a" />
-                      <XAxis
-                        dataKey="question"
-                        stroke="#918a8a"
-                        tick={{ fill: "#918a8a" }}
-                      />
+                      <XAxis dataKey="question" stroke="#918a8a" tick={{ fill: "#918a8a" }} />
                       <YAxis stroke="#918a8a" tick={{ fill: "#918a8a" }} />
                       <Tooltip
                         contentStyle={{
@@ -292,11 +252,7 @@ const Practice = () => {
                           borderRadius: "8px",
                         }}
                       />
-                      <Bar
-                        dataKey="time"
-                        fill="#00ffff"
-                        radius={[4, 4, 0, 0]}
-                      />
+                      <Bar dataKey="time" fill="#00ffff" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -305,11 +261,8 @@ const Practice = () => {
 
             <motion.div variants={item} className="space-y-6">
               <h3 className="text-xl font-bold text-white">Solutions</h3>
-              {questions.map((sequence, index) => (
-                <div
-                  key={index}
-                  className="bg-[#2a2a2a] rounded-xl p-6"
-                >
+              {questions.slice(0, questionIndex + 1).map((sequence, index) => (
+                <div key={index} className="bg-[#2a2a2a] rounded-xl p-6">
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-[#918a8a]">Question {index + 1}</span>
                     <div className="flex gap-2">
@@ -342,10 +295,7 @@ const Practice = () => {
               ))}
             </motion.div>
 
-            <motion.div
-              variants={item}
-              className="flex justify-center mt-12"
-            >
+            <motion.div variants={item} className="flex justify-center mt-12">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
