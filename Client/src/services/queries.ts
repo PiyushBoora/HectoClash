@@ -39,25 +39,61 @@ export const useGetUserById = (userId:string|null) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
-      
+
       try {
-        // API call to fetch user by ID
-        console.log(userId);
-          const response = await axios.get(`/api/user/get/${userId}`);
-          if (!response.data.success) {
-            throw new Error(response.data.message || 'Failed to fetch user');
-          }
-  
-          return response.data.user;
-        } catch (error:any) {
-          // Handle errors and rethrow for React Query
-          throw new Error(
-            error.response?.data?.message || error.message || 'Unknown Error'
-          );
+        const response = await axios.get(`/api/user/get/${userId}`);
+        if (!response.data.success) {
+          throw new Error(response.data.message || 'Failed to fetch user');
         }
-      },
-      enabled: !!userId, // Only run the query if userId is provided
-      retry: false, // Disable retries on failure
-    });
-  
-  };
+        return response.data.user;
+      } catch (error: any) {
+        throw new Error(
+          error.response?.data?.message || error.message || 'Unknown Error'
+        );
+      }
+    },
+    enabled: !!userId,
+    retry: false,
+  });
+};
+
+export const useGetLeaderboard = () => {
+  return useQuery({
+    queryKey: ['leaderboard'],
+    queryFn: async () => {
+      try {
+        const response = await axios.get('/api/game/leaderboard');
+        if (!response.data.success) {
+          throw new Error(response.data.message || 'Failed to fetch leaderboard');
+        }
+        return response.data.users;
+      } catch (error: any) {
+        throw new Error(
+          error.response?.data?.message || error.message || 'Failed to fetch leaderboard'
+        );
+      }
+    },
+    retry: false,
+  });
+};
+
+export const useGetGameAnalysis = (gameId: string) => {
+  return useQuery({
+    queryKey: ['game', gameId],
+    queryFn: async () => {
+      try {
+        const response = await axios.get(`/api/game/${gameId}/stats`);
+        if (!response.data.success) {
+          throw new Error(response.data.message || 'Failed to fetch game stats');
+        }
+        return response.data.game;
+      } catch (error: any) {
+        throw new Error(
+          error.response?.data?.message || error.message || 'Failed to fetch game stats'
+        );
+      }
+    },
+    enabled: !!gameId,
+    retry: false,
+  });
+};

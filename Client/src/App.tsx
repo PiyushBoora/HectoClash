@@ -5,7 +5,8 @@ import Game from "./pages/Game";
 import Wait from "./pages/Wait";
 import IndividualMatch from "./pages/IndividualMatch";
 import Spectator from "./pages/spectator";
-
+import Practice from "./pages/Practice";
+import Analysis from "./pages/Analysis";
 function App() {
 
   return (
@@ -17,6 +18,8 @@ function App() {
           <Route path="/wait/:id" element={<Wait />} />
           <Route path="/spectate" element={<Spectator/>}/>
           <Route path="/spectate/:id" element={<IndividualMatch/>}/>
+          <Route path="/practice" element={<Practice />} />
+          <Route path="/analysis/:gameId" element={<Analysis />} />
         </Routes>
      
     </main>
@@ -24,3 +27,6 @@ function App() {
 }
 
 export default App
+
+
+
