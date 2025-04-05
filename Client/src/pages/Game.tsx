@@ -27,7 +27,7 @@ const Game = () => {
   const [gameEnded, setGameEnded] = useState(false);
 const [gameResultMessage, setGameResultMessage] = useState("");
 
-  const { mutate: createDuel } = useCreateDuel();
+  const { mutate: createDuel,isPending:creatingDuel } = useCreateDuel();
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -61,6 +61,7 @@ const [gameResultMessage, setGameResultMessage] = useState("");
         socket.off("joinRoom");
       };
     },[])
+    console.log(opponentState);
   useEffect(() => {
     // Listen for both players being ready
     socket.on("bothPlayersReady", () => {
@@ -89,13 +90,13 @@ const [gameResultMessage, setGameResultMessage] = useState("");
 
     // Handle game over
     socket.on("gameOver", ({ message, room }) => {
-      console.log(opponentState);
+      console.log(room);
         createDuel(
           {
-            player1Id: user._id,
-            player2Id: opponentState.opponent._id,
-            player1Score: score,
-            player2Score: opponentState.score,
+            player1Id: room.players[0].playerId,
+            player2Id: room.players[1].playerId,
+            player1Score: room.players[0].score,
+            player2Score: room.players[1].score,
             duelTime: room.duelTime,
           },
           {
@@ -159,6 +160,13 @@ const [gameResultMessage, setGameResultMessage] = useState("");
       </div>
     );
   }
+  if (creatingDuel) {
+    return (
+      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
+        <div className="text-white text-xl">Preparing the Result...</div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -179,7 +187,7 @@ const [gameResultMessage, setGameResultMessage] = useState("");
         </div>
         <button
           onClick={() => navigate("/dashboard")}
-          className="mt-8 bg-main-green text-black px-6 py-2 rounded-xl font-semibold hover:bg-opacity-80 transition"
+          className="mt-8 bg-main-green text-black px-6 py-2 rounded-xl cursor-pointer font-semibold hover:bg-opacity-80 transition"
         >
           Play Again
         </button>

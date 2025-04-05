@@ -14,6 +14,7 @@ export const useCreateDuel = () => {
 
   return useMutation({
     mutationFn: async (payload: CreateDuelPayload) => {
+        console.log(payload);
       const response = await axios.post("/api/duel/create", payload, {
         headers: { "Content-Type": "application/json" },
       });

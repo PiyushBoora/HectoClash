@@ -56,7 +56,7 @@ const sequences = [
   ["8", "3", "6", "4", "9", "7"],
 ]; // Add more sequences as needed
 const GAME_TIME = 1200; // Total game time in seconds
-
+const randomJoiners=[];
 // Add function to emit rooms update to all spectators
 function emitRoomsUpdate() {
   const activeRooms = Object.entries(rooms).map(([roomId, room]) => ({
@@ -70,6 +70,13 @@ function emitRoomsUpdate() {
 
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
+
+  socket.on('randomMatchRoomJoin',({playerId})=>{
+   if(randomJoiners.length>1){
+        
+   }
+
+  })
 
   // Add handler for spectator connection
   socket.on("spectatorJoin", () => {

@@ -6,9 +6,9 @@ const createDuel = async (req, res) => {
     const { player1Id, player2Id,player1Score,
         player2Score,
         duelTime } = req.body;
-
-    if (!player1Id || !player2Id||player1Score||player2Score||duelTime) {
-      return res.status(400).json({ message: "All fields are required." });
+        console.log(req.body);
+    if (!player1Id || !player2Id) {
+      return res.status(400).json({ message: "Player Id's are required." });
     }
 
     
