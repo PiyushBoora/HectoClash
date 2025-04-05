@@ -175,8 +175,7 @@ const [gameResultMessage, setGameResultMessage] = useState("");
 
   return (
     <>
-    {
-      gameEnded?
+    {gameEnded ? (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a1a1a] text-white px-4">
         <h1 className="text-4xl font-bold mb-6">{gameResultMessage}</h1>
         <div className="flex gap-10 items-center justify-center text-center">
@@ -196,58 +195,72 @@ const [gameResultMessage, setGameResultMessage] = useState("");
         >
           Play Again
         </button>
-      </div>: 
-      isGameActive ? (
-        <div className="min-h-screen bg-main-black pt-10 max-md:px-5 flex flex-col items-center justify-start">
-          <div className="flex flex-col h-full w-[50%] max-w-full max-md:w-full">
-            <div className="w-full flex items-center justify-between">
-              <div className="flex flex-col items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <img src={user?.profileImage} className="size-[2.5rem] rounded-xl" />
-                  <span className="text-main-white text-[1.25rem] font-semibold">You</span>
-                </div>
-                <div className="py- px-5 bg-[#2a2a2a] border-[1px] border-main-green rounded-[10px]">
-                  <span className="text-main-white ">{score}</span>
-                </div>
-              </div>
+      </div>
+    ) : isGameActive ? (
+      <div className="min-h-screen bg-main-black pt-24 max-md:px-5 flex flex-col items-center justify-start relative overflow-hidden">
+        {/* Grid Background */}
+        <div className="absolute inset-0 bg-[#1a1a1a]">
+          <div className="absolute inset-0" 
+               style={{
+                 backgroundImage: `
+                   linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
+                   linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)
+                 `,
+                 backgroundSize: '40px 40px',
+                 opacity: '0.55'
+               }}>
+          </div>
+          {/* Radial gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-radial from-transparent via-[#1a1a1a]/80 to-[#1a1a1a] opacity-90"></div>
+        </div>
 
-              <div className="flex flex-col items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <img src={opponentState.opponent?.profileImage} className="size-[2.5rem] rounded-xl" />
-                  <span className="text-main-white text-[1.25rem] font-semibold">{opponentState.opponent?.name}</span>
-                </div>
-                <div className="py- px-5 bg-[#2a2a2a] border-[1px] border-main-green rounded-[10px]">
-                  <span className="text-main-white ">{opponentState.score}</span>
-                </div>
+        <div className="flex flex-col h-full w-[50%] max-w-full max-md:w-full relative z-10">
+          <div className="w-full flex items-center justify-between">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2">
+                <img src={user?.profileImage} className="size-[2.5rem] rounded-xl" />
+                <span className="text-main-white text-[1.25rem] font-semibold">You</span>
+              </div>
+              <div className="py-2 px-5 bg-[#2a2a2a] border-[1px] border-main-green rounded-[10px]">
+                <span className="text-main-white">{score}</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-center">
-              <div className="flex gap-1 items-center p-1 px-2 border-[1px] border-main-white/30 rounded-[10px]">
-                <Timer className="size-[0.9rem] text-[#00ffff]" />
-                <span className="text-[#00ffff] text-s font-bold">{formatTime(time)}</span>
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2">
+                <img src={opponentState.opponent?.profileImage} className="size-[2.5rem] rounded-xl" />
+                <span className="text-main-white text-[1.25rem] font-semibold">{opponentState.opponent?.name}</span>
+              </div>
+              <div className="py-2 px-5 bg-[#2a2a2a] border-[1px] border-main-green rounded-[10px]">
+                <span className="text-main-white">{opponentState.score}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex-1 flex-col flex items-center justify-center">
-            {sequence.length > 0 && <Sequence sequence={sequence} handleScoreUpdate={handleScoreUpdate} />}
+          <div className="flex items-center justify-center mt-6">
+            <div className="flex gap-1 items-center p-1 px-2 border-[1px] border-main-white/30 rounded-[10px] bg-[#2a2a2a]/50 backdrop-blur-sm">
+              <Timer className="size-[0.9rem] text-[#00ffff]" />
+              <span className="text-[#00ffff] text-s font-bold">{formatTime(time)}</span>
+            </div>
           </div>
         </div>
-      ) : (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a1a1a] text-[#e0e0e0]">
-          <h1 className="text-3xl font-bold">Waiting for Opponent...</h1>
-          {roomId && (
-            <div className="mt-4">
-              <p className="text-xl">Your Duel ID:</p>
-              <span className="text-[#00ffff] font-mono text-2xl">{roomId}</span>
-            </div>
-          )}
+
+        <div className="flex-1 flex-col flex items-center justify-center relative z-10">
+          {sequence.length > 0 && <Sequence sequence={sequence} handleScoreUpdate={handleScoreUpdate} />}
         </div>
-      )
-    }
-     
-    </>
+      </div>
+    ) : (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a1a1a] text-[#e0e0e0]">
+        <h1 className="text-3xl font-bold">Waiting for Opponent...</h1>
+        {roomId && (
+          <div className="mt-4">
+            <p className="text-xl">Your Duel ID:</p>
+            <span className="text-[#00ffff] font-mono text-2xl">{roomId}</span>
+          </div>
+        )}
+      </div>
+    )}
+  </>
   );
 };
 
