@@ -1,5 +1,6 @@
 import { io } from "socket.io-client";
+import { BASE_URL } from "./axios";
 
-const socket = io("http://localhost:8080"); // Replace with your backend URL if deployed
+const socket = io(BASE_URL); // Replace with your backend URL if deployed
 
 export default socket;
