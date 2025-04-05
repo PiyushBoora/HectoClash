@@ -1,5 +1,5 @@
 import Login from "./pages/Login"
-import {Routes, Route } from "react-router-dom";
+import {Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Game from "./pages/Game";
 import Wait from "./pages/Wait";
@@ -15,6 +15,7 @@ function App() {
     <main>
         <Header/>
       <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/game/:id" element={<Game />} />
