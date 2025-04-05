@@ -79,7 +79,7 @@ const signOut = async (req, res) => {
   }
 };
 
-module.exports = {
+module.exports = { 
   setCookie,
   getMe,
   googleAuth,

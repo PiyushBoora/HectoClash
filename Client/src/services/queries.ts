@@ -62,11 +62,8 @@ export const useGetLeaderboard = () => {
     queryKey: ['leaderboard'],
     queryFn: async () => {
       try {
-        const response = await axios.get('/api/game/leaderboard');
-        if (!response.data.success) {
-          throw new Error(response.data.message || 'Failed to fetch leaderboard');
-        }
-        return response.data.users;
+        const response = await axios.get('/api/user/getLeaderboard');
+        return response.data.leaderboard;
       } catch (error: any) {
         throw new Error(
           error.response?.data?.message || error.message || 'Failed to fetch leaderboard'

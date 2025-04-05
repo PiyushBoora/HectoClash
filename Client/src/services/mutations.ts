@@ -27,7 +27,7 @@ export const useCreateDuel = () => {
     },
     onSuccess: (data) => {
       console.log("Duel created:", data);
-      queryClient.invalidateQueries({ queryKey: ["duels"] }); // Optional: if you fetch duels
+      queryClient.invalidateQueries({ queryKey: ["leaderboard"] }); 
     },
     onError: (error: any) => {
       console.error("Error creating duel:", error);

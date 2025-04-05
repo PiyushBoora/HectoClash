@@ -3,92 +3,57 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { Swords, Users, Trophy, Timer, Target, TrendingUp, X, ChevronRight } from "lucide-react"
+import { Swords, Users, Trophy, Timer, Target, TrendingUp, X, ChevronRight, Eye, Shuffle, PlusCircle } from "lucide-react"
 import { useGetMe, useGetLeaderboard } from "../services/queries"
+import { isequalto100 } from "../Utils/SequenceChecker"
 
 const Dashboard = () => {
+  console.log(isequalto100('2*5m(4/4^6^6)'));
   const [duelId, setDuelId] = useState("")
   const [isJoiningDuel, setIsJoiningDuel] = useState(false)
-  const [leaderboardType, setLeaderboardType] = useState("allTime") // "weekly" or "allTime"
-  const { data: user, isLoading, isError } = useGetMe()
-  const { data: allTimeLeaderboardData, isLoading: isAllTimeLeaderboardLoading } = useGetLeaderboard("allTime")
-  const { data: weeklyLeaderboardData, isLoading: isWeeklyLeaderboardLoading } = useGetLeaderboard("weekly")
+  const { data: user, isLoading, isError } = useGetMe();
+  const { data: leaderboard, isLoading: isLeaderboardLoading } = useGetLeaderboard();
   const navigate = useNavigate()
-
+  console.log(user);
   useEffect(() => {
     if (isError) navigate("/login")
   }, [isError])
+ 
+  const userStats = user?.stats || {}
 
-  const stats = user
-    ? [
-        {
-          icon: Trophy,
-          label: "Total Score",
-          value: user.stats.totalScore.toString(),
-          color: "from-amber-500 to-yellow-300",
-          bgColor: "bg-amber-950/30",
-        },
-        {
-          icon: Timer,
-          label: "Avg. Time",
-          value: `${Math.round(user.stats.averageTime)}s`,
-          color: "from-blue-500 to-cyan-300",
-          bgColor: "bg-blue-950/30",
-        },
-        {
-          icon: Target,
-          label: "Accuracy",
-          value: `${Math.round(user.stats.accuracy)}%`,
-          color: "from-green-500 to-emerald-300",
-          bgColor: "bg-green-950/30",
-          percentage: user.stats.accuracy,
-        },
-        {
-          icon: TrendingUp,
-          label: "Win Rate",
-          value: user.stats.gamesPlayed > 0 ? `${Math.round((user.stats.wins / user.stats.gamesPlayed) * 100)}%` : "0%",
-          color: "from-purple-500 to-fuchsia-300",
-          bgColor: "bg-purple-950/30",
-          percentage: user.stats.gamesPlayed > 0 ? Math.round((user.stats.wins / user.stats.gamesPlayed) * 100) : 0,
-        },
-      ]
-    : [
-        {
-          icon: Trophy,
-          label: "Total Score",
-          value: "0",
-          color: "from-amber-500 to-yellow-300",
-          bgColor: "bg-amber-950/30",
-        },
-        {
-          icon: Timer,
-          label: "Avg. Time",
-          value: "0s",
-          color: "from-blue-500 to-cyan-300",
-          bgColor: "bg-blue-950/30",
-        },
-        {
-          icon: Target,
-          label: "Accuracy",
-          value: "0%",
-          color: "from-green-500 to-emerald-300",
-          bgColor: "bg-green-950/30",
-          percentage: 0,
-        },
-        {
-          icon: TrendingUp,
-          label: "Win Rate",
-          value: "0%",
-          color: "from-purple-500 to-fuchsia-300",
-          bgColor: "bg-purple-950/30",
-          percentage: 0,
-        },
-      ]
+  const stats = [
+    {
+      icon: Trophy,
+      label: "Total Score",
+      value: userStats.wins?.toString() || "0",
+      color: "from-amber-500 to-yellow-300",
+      bgColor: "bg-amber-950/30",
+    },
+    {
+      icon: Timer,
+      label: "Avg. Time",
+      value: "15s",
+      color: "from-blue-500 to-cyan-300",
+      bgColor: "bg-blue-950/30",
+    },
+    {
+      icon: Target,
+      label: "Games Played",
+      value: userStats.gamesPlayed||'0',
+      color: "from-green-500 to-emerald-300",
+      bgColor: "bg-green-950/30",
+    },
+    {
+      icon: TrendingUp,
+      label: "Win Rate",
+      value: userStats.gamesPlayed > 0 ? `${Math.round((userStats.wins / userStats.gamesPlayed) * 100)}%` : "0%",
+      color: "from-purple-500 to-fuchsia-300",
+      bgColor: "bg-purple-950/30",
+      percentage: userStats.gamesPlayed > 0 ? Math.round((userStats.wins / userStats.gamesPlayed) * 100) : 0,
+    },
+  ]
 
   const generateDuelId = () => Math.random().toString(36).substring(2, 10).toUpperCase()
-
-  const leaderboardData = leaderboardType === "weekly" ? weeklyLeaderboardData : allTimeLeaderboardData
-  const isLeaderboardLoading = leaderboardType === "weekly" ? isWeeklyLeaderboardLoading : isAllTimeLeaderboardLoading
 
   const container = {
     hidden: { opacity: 0 },
@@ -103,6 +68,17 @@ const Dashboard = () => {
   const item = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 },
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white text-lg">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-[#3a3a3a] border-t-[#00ffff] rounded-full animate-spin mb-4 mx-auto"></div>
+          <p className="text-[#999]">Preparing the dashboard...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -151,68 +127,103 @@ const Dashboard = () => {
         {/* Main Content - 2 Columns */}
         <div className="grid md:grid-cols-3 gap-6">
           {/* Quick Actions - Left Column */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="md:col-span-1"
-          >
-            <div className="bg-[#2a2a2a] rounded-xl border border-[#3a3a3a]/50 shadow-lg overflow-hidden h-full">
-              <div className="p-6 border-b border-[#3a3a3a]">
-                <h2 className="text-xl font-semibold flex items-center">
-                  <Trophy className="w-5 h-5 mr-2 text-[#00ffff]" />
-                  Quick Actions
-                </h2>
-              </div>
 
-              <div className="p-6 space-y-4">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => navigate(`/game/${generateDuelId()}`)}
-                  className="w-full bg-gradient-to-r from-[#00ffff] to-[#0088ff] text-[#1a1a1a] px-6 py-4 rounded-lg font-semibold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Swords className="inline-block mr-2" />
-                      Create New Duel
-                    </div>
-                    <ChevronRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </motion.button>
+<motion.div
+  initial={{ opacity: 0, x: -20 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ delay: 0.3, duration: 0.5 }}
+  className="md:col-span-1"
+>
+  <div className="bg-[#2a2a2a] rounded-xl border border-[#3a3a3a]/50 shadow-lg overflow-hidden h-full">
+    <div className="p-6 border-b border-[#3a3a3a]">
+      <h2 className="text-xl font-semibold flex items-center">
+        <Trophy className="w-5 h-5 mr-2 text-[#00ffff]" />
+        Quick Actions
+      </h2>
+    </div>
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setIsJoiningDuel(true)}
-                  className="w-full bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white px-6 py-4 rounded-lg font-semibold transition-all border border-[#4a4a4a] group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Users className="inline-block mr-2" />
-                      Join Existing Duel
-                    </div>
-                    <ChevronRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </motion.button>
+    <div className="p-6 space-y-4">
+    <motion.button
+  whileHover={{ scale: 1.02 }}
+  whileTap={{ scale: 0.98 }}
+  onClick={() => navigate("/random/match")}
+  className="w-full bg-gradient-to-r from-[#00ffff] cursor-pointer to-[#0088ff] text-[#1a1a1a] px-6 py-4 rounded-lg font-semibold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 group"
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => navigate("/practice")}
-                  className="w-full bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white px-6 py-4 rounded-lg font-semibold transition-all border border-[#4a4a4a] group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Target className="inline-block mr-2" />
-                      Practice Mode
-                    </div>
-                    <ChevronRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
+>
+  <div className="flex items-center justify-between">
+    <div className="flex items-center">
+    <Swords className="inline-block mr-2" />
+      Online Duel
+    </div>
+    <ChevronRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
+  </div>
+</motion.button>
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => navigate(`/game/${generateDuelId()}`)}
+        className="w-full bg-[#3a3a3a] hover:bg-[#4a4a4a] cursor-pointer text-white px-6 py-4 rounded-lg font-semibold transition-all border border-[#4a4a4a] group"
+        >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <PlusCircle className="inline-block mr-2" />
+            Create New Duel
+          </div>
+          <ChevronRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
+        </div>
+      </motion.button>
+
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => setIsJoiningDuel(true)}
+        className="w-full bg-[#3a3a3a] hover:bg-[#4a4a4a] cursor-pointer text-white px-6 py-4 rounded-lg font-semibold transition-all border border-[#4a4a4a] group"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Users className="inline-block mr-2" />
+            Join Existing Duel
+          </div>
+          <ChevronRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
+        </div>
+      </motion.button>
+
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => navigate("/practice")}
+        className="w-full bg-[#3a3a3a] hover:bg-[#4a4a4a] cursor-pointer text-white px-6 py-4 rounded-lg font-semibold transition-all border border-[#4a4a4a] group"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Target className="inline-block mr-2" />
+            Practice Mode
+          </div>
+          <ChevronRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
+        </div>
+      </motion.button>
+
+      {/* Spectator Mode Button */}
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => navigate("/spectate")}
+        className="w-full bg-[#3a3a3a] hover:bg-[#4a4a4a] cursor-pointer text-white px-6 py-4 rounded-lg font-semibold transition-all border border-[#4a4a4a] group"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Eye className="inline-block mr-2" />
+            Spectator Mode
+          </div>
+          <ChevronRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
+        </div>
+      </motion.button>
+     
+
+    </div>
+  </div>
+</motion.div>
+
 
           {/* Leaderboard - Right Column */}
           <motion.div
@@ -227,28 +238,6 @@ const Dashboard = () => {
                   <Trophy className="w-5 h-5 mr-2 text-amber-400" />
                   Global Leaderboard
                 </h2>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setLeaderboardType("weekly")}
-                    className={`text-sm px-3 py-1 rounded-md transition-colors ${
-                      leaderboardType === "weekly"
-                        ? "bg-[#00ffff] text-[#1a1a1a]"
-                        : "bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white"
-                    }`}
-                  >
-                    Weekly
-                  </button>
-                  <button
-                    onClick={() => setLeaderboardType("allTime")}
-                    className={`text-sm px-3 py-1 rounded-md transition-colors ${
-                      leaderboardType === "allTime"
-                        ? "bg-[#00ffff] text-[#1a1a1a]"
-                        : "bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white"
-                    }`}
-                  >
-                    All Time
-                  </button>
-                </div>
               </div>
 
               <div className="p-6">
@@ -257,7 +246,7 @@ const Dashboard = () => {
                     <div className="w-10 h-10 border-4 border-[#3a3a3a] border-t-[#00ffff] rounded-full animate-spin mb-4"></div>
                     <p className="text-[#918a8a]">Loading leaderboard...</p>
                   </div>
-                ) : leaderboardData?.length > 0 ? (
+                ) : leaderboard?.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>
@@ -269,12 +258,12 @@ const Dashboard = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {leaderboardData.map((player, i) => (
+                        {leaderboard.map((player:any, index:number) => (
                           <motion.tr
                             key={player._id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 + i * 0.05 }}
+                            transition={{ delay: 0.5 + index * 0.05 }}
                             className="border-b border-[#3a3a3a] hover:bg-[#3a3a3a]/30 transition-colors"
                           >
                             <td className="py-4 px-4">
@@ -282,16 +271,16 @@ const Dashboard = () => {
                                 <div
                                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
                                   ${
-                                    i === 0
+                                    index === 0
                                       ? "bg-gradient-to-r from-amber-500 to-yellow-300 text-[#1a1a1a]"
-                                      : i === 1
+                                      : index === 1
                                         ? "bg-gradient-to-r from-slate-300 to-slate-100 text-[#1a1a1a]"
-                                        : i === 2
+                                        : index === 2
                                           ? "bg-gradient-to-r from-amber-700 to-amber-500 text-[#1a1a1a]"
                                           : "bg-[#3a3a3a] text-white"
                                   }`}
                                 >
-                                  {i + 1}
+                                  {index + 1}
                                 </div>
                               </div>
                             </td>
@@ -300,11 +289,11 @@ const Dashboard = () => {
                                 <div
                                   className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold
                                   ${
-                                    i === 0
+                                    index === 0
                                       ? "bg-gradient-to-br from-amber-500 to-yellow-300 text-[#1a1a1a]"
-                                      : i === 1
+                                      : index === 1
                                         ? "bg-gradient-to-br from-slate-300 to-slate-100 text-[#1a1a1a]"
-                                        : i === 2
+                                        : index === 2
                                           ? "bg-gradient-to-br from-amber-700 to-amber-500 text-[#1a1a1a]"
                                           : "bg-gradient-to-br from-[#3a3a3a] to-[#4a4a4a] text-white"
                                   }`}
@@ -313,7 +302,7 @@ const Dashboard = () => {
                                 </div>
                                 <div>
                                   <p className="font-medium">{player.name}</p>
-                                  <p className="text-xs text-[#918a8a]">Level {player.level || 1}</p>
+                                  {/* <p className="text-xs text-[#918a8a]">Level {player.level || 1}</p> */}
                                 </div>
                               </div>
                             </td>
@@ -322,33 +311,33 @@ const Dashboard = () => {
                                 <motion.div
                                   initial={{ width: 0 }}
                                   animate={{
-                                    width: `${player.stats.gamesPlayed > 0 ? Math.round((player.stats.wins / player.stats.gamesPlayed) * 100) : 0}%`,
+                                    width: `${player.totalSolved > 0 ? Math.round((player.wins / player.totalSolved) * 100) : 0}%`,
                                   }}
-                                  transition={{ duration: 1, delay: 0.7 + i * 0.05 }}
+                                  transition={{ duration: 1, delay: 0.7 + index * 0.05 }}
                                   className={`h-full rounded-full ${
-                                    i === 0
+                                    index === 0
                                       ? "bg-gradient-to-r from-amber-500 to-yellow-300"
-                                      : i === 1
+                                      : index === 1
                                         ? "bg-gradient-to-r from-slate-300 to-slate-100"
-                                        : i === 2
+                                        : index === 2
                                           ? "bg-gradient-to-r from-amber-700 to-amber-500"
                                           : "bg-gradient-to-r from-[#00ffff] to-[#0088ff]"
                                   }`}
                                 />
                               </div>
                               <p className="text-sm mt-1">
-                                {player.stats.gamesPlayed > 0
-                                  ? Math.round((player.stats.wins / player.stats.gamesPlayed) * 100)
+                                {player.totalSolved > 0
+                                  ? Math.round((player.wins / player.totalSolved) * 100)
                                   : 0}
                                 %
                                 <span className="text-xs text-[#918a8a] ml-1">
-                                  ({player.stats.wins}/{player.stats.gamesPlayed})
+                                  ({player.wins}/{player.totalSolved})
                                 </span>
                               </p>
                             </td>
                             <td className="py-4 px-4 text-right">
                               <span className="text-xl font-bold bg-gradient-to-r from-[#00ffff] to-[#0088ff] bg-clip-text text-transparent">
-                                {player.stats.totalScore.toLocaleString()}
+                                {player.wins.toLocaleString()}
                               </span>
                             </td>
                           </motion.tr>

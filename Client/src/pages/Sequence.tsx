@@ -195,8 +195,6 @@
 
   // export default HectocGame;
 // @ts-nocheck
-
-
 import { useEffect, useRef, useState } from "react";
 import { motion, useMotionValue, animate } from "framer-motion";
 import { useParams } from "react-router-dom";
@@ -204,7 +202,7 @@ import { useGetMe } from "../services/queries";
 import socket from "../Utils/socket";
 import { isequalto100 } from "../Utils/SequenceChecker";
 
-type OperatorType = "+" | "-" | "*" | "/";
+type OperatorType = "+" | "-" | "*" | "/" | "^" | "*10+";
 type Box = {
   id: number;
   value: string;
@@ -221,7 +219,7 @@ type SequenceProps = {
 
 const Sequence = ({ sequence, handleScoreUpdate }: SequenceProps) => {
   const { id: roomId } = useParams();
-  const fixedOperators: OperatorType[] = ["+", "-", "*", "/"];
+  const fixedOperators: OperatorType[] = ["+", "-", "*", "/", "^", "*10+"];
   const { data: user } = useGetMe();
 
   const [boxes, setBoxes] = useState<Box[]>(() => {
@@ -324,12 +322,18 @@ const Sequence = ({ sequence, handleScoreUpdate }: SequenceProps) => {
 
   const generateMathExpression = () => {
     let expression = "";
+    console.log(boxes);
     boxes.forEach((box) => {
       if (box.hasLeftParenthesis) expression += "(";
-      expression += box.value;
+
+      // Convert ^ to ** for JavaScript exponentiation 
+      
+      if(box.value==='*10+')  expression += 'm';
+      else expression+=box.value;
+      
       if (box.hasRightParenthesis) expression += ")";
     });
-
+    console.log(expression);
     const isValid = isequalto100(expression);
 
     if (user && user._id) {
@@ -421,7 +425,7 @@ const Sequence = ({ sequence, handleScoreUpdate }: SequenceProps) => {
                       isDraggingOperator
                         ? "border-dashed border border-main-green"
                         : ""
-                    } rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer text-[#fffcfc]`}
+                    } rounded-lg flex items-center justify-center font-bold cursor-pointer text-[#fffcfc] ${box.value==='*10+'?'text-l':'text-2xl'}`}
                   >
                     {box.value}
                   </div>
@@ -431,7 +435,7 @@ const Sequence = ({ sequence, handleScoreUpdate }: SequenceProps) => {
           })}
         </motion.div>
 
-        <div className="flex justify-center gap-4 mt-8">
+        <div className="flex justify-center gap-4 mt-8 flex-wrap">
           {operators.map((operator, index) => (
             <motion.div
               key={`${operator}-${index}`}
@@ -455,7 +459,7 @@ const Sequence = ({ sequence, handleScoreUpdate }: SequenceProps) => {
                       transition: { duration: 0.2 },
                     }
               }
-              className="w-10 h-10 bg-[#2a2a2a] rounded-lg flex items-center justify-center hover:bg-[#3a3a3a] transition-colors shadow-lg border border-[#3a3a3a]"
+              className={`${operator === "*10+" ? "w-12" : "w-10"} h-10 bg-[#2a2a2a] rounded-lg flex items-center justify-center hover:bg-[#3a3a3a] transition-colors shadow-lg border border-[#3a3a3a]`}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onDragStart={() => {
@@ -482,7 +486,9 @@ const Sequence = ({ sequence, handleScoreUpdate }: SequenceProps) => {
                 setIsDraggingOperator(false);
               }}
             >
-              <span className="text-2xl font-bold text-[#e0e0e0]">{operator}</span>
+              <span className={` font-bold text-[#e0e0e0] ${operator==='*10+'?'text-l':'text-2xl'}`}>
+                { operator}
+              </span>
             </motion.div>
           ))}
         </div>

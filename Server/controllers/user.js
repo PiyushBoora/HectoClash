@@ -27,4 +27,23 @@ const getUserById = async (req, res) => {
   }
 };
 
-module.exports = { getUserById };
+const getLeaderboard = async (req, res) => {
+  try {
+    const leaderboard = await User.find({}, '_id name stats.wins stats.totalSolved') // Select only necessary fields
+      .sort({ 'stats.wins': -1, 'stats.totalSolved': -1 }); // Sort by wins desc, then totalSolved desc
+
+    const formattedLeaderboard = leaderboard.map(user => ({
+      _id:user._id,
+      name: user.name,
+      wins: user.stats.wins,
+      totalSolved: user.stats.totalSolved
+    }));
+
+    res.status(200).json({ leaderboard: formattedLeaderboard });
+  } catch (error) {
+    console.error("Error fetching leaderboard:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+module.exports = { getUserById,getLeaderboard };

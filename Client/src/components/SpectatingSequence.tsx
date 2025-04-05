@@ -34,7 +34,8 @@
           hasLeftParenthesis: i > 0 && expression[i - 1] === "(",
           hasRightParenthesis: i < expression.length - 1 && expression[i + 1] === ")",
         });
-      } else if (["+", "-", "*", "/"].includes(char)) {
+      } 
+      else if (["+", "-", "*", "/", "^"].includes(char)) {
         boxes.push({
           id: id++,
           value: char,
@@ -43,8 +44,20 @@
           hasLeftParenthesis: false,
           hasRightParenthesis: false,
         });
+      } 
+      else if (char === "m") {
+        // Treat 'm' as the special '*10+' operator
+        boxes.push({
+          id: id++,
+          value: "*10+",
+          type: "operator",
+          isFixed: false,
+          hasLeftParenthesis: false,
+          hasRightParenthesis: false,
+        });
       }
-      // ignore parentheses themselves, handled above
+  
+      // Ignore actual parentheses
     }
   
     return boxes;
@@ -182,7 +195,7 @@
                     )}
 
                     {box.type === "operator" && (
-                      <div className="w-4 h-7 rounded-lg border-[#3a3a3a] flex items-center justify-center text-2xl font-bold cursor-pointer text-[#918a8a]">
+                      <div className={`w-4 h-7 rounded-lg border-[#3a3a3a] flex items-center justify-center font-bold cursor-pointer text-[#918a8a] ${box.value==='*10+'?'text-l':'text-2xl'}`}>
                         {box.value}
                       </div>
                     )}

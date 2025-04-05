@@ -105,24 +105,6 @@ const Header = () => {
             })}
           </nav>
 
-<<<<<<< HEAD
-          <div className="flex items-center space-x-4">
-            {user && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="flex items-center space-x-3"
-              >
-               {user.profileImage&& <img
-                  src={user.profileImage}
-                  alt={user.name}
-                  className="h-8 w-8 rounded-full border-2 border-[#00ffff]"
-                />}
-                <span className="text-white font-medium">{user.name}</span>
-              </motion.div>
-            )}
-          </div>
-=======
           {/* User Profile + Dropdown */}
           {user && (
             <div className="relative flex items-center space-x-3" ref={dropdownRef}>
@@ -153,7 +135,6 @@ const Header = () => {
               )}
             </div>
           )}
->>>>>>> main
         </div>
       </div>
     </motion.header>

@@ -206,8 +206,8 @@ const [gameResultMessage, setGameResultMessage] = useState("");
                    linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
                    linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)
                  `,
-                 backgroundSize: '40px 40px',
-                 opacity: '0.55'
+                 backgroundSize: '50px 50px',
+                 opacity: '0.5'
                }}>
           </div>
           {/* Radial gradient overlay */}
@@ -218,7 +218,7 @@ const [gameResultMessage, setGameResultMessage] = useState("");
           <div className="w-full flex items-center justify-between">
             <div className="flex flex-col items-center gap-4">
               <div className="flex items-center gap-2">
-                <img src={user?.profileImage} className="size-[2.5rem] rounded-xl" />
+               {user.profileImage&& <img src={user?.profileImage} className="size-[2.5rem] rounded-xl" />}
                 <span className="text-main-white text-[1.25rem] font-semibold">You</span>
               </div>
               <div className="py-2 px-5 bg-[#2a2a2a] border-[1px] border-main-green rounded-[10px]">
@@ -228,7 +228,7 @@ const [gameResultMessage, setGameResultMessage] = useState("");
 
             <div className="flex flex-col items-center gap-4">
               <div className="flex items-center gap-2">
-                <img src={opponentState.opponent?.profileImage} className="size-[2.5rem] rounded-xl" />
+               {opponentState.opponent?.profileImage&& <img src={opponentState.opponent?.profileImage} className="size-[2.5rem] rounded-xl" />}
                 <span className="text-main-white text-[1.25rem] font-semibold">{opponentState.opponent?.name}</span>
               </div>
               <div className="py-2 px-5 bg-[#2a2a2a] border-[1px] border-main-green rounded-[10px]">

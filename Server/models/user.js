@@ -18,11 +18,10 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
     stats: {
-      totalScore: { type: Number, default: 0 },
+      totalSolved: { type: Number, default: 0 },
       gamesPlayed: { type: Number, default: 0 },
       wins: { type: Number, default: 0 },
       averageTime: { type: Number, default: 0 },
-      accuracy: { type: Number, default: 0 },
       rank: { type: Number, default: 0 }
     }
   },
