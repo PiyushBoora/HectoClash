@@ -1,6 +1,7 @@
 import { motion } from "motion/react"
 import { Brain } from 'lucide-react';
-const BACKEND_URL='http://localhost:8080'
+// const BACKEND_URL='http://localhost:8080'
+const BACKEND_URL='https://hectoclash.onrender.com';
 const Login = () => {
   const handleGoogleLogin = () => {
     // Implement Google login logic here
