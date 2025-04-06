@@ -164,7 +164,7 @@ const RandomMatch = () => {
       socket.off("roomUpdate");
       socket.off("latestScore");
       socket.off("message");
-      socket.emit('leftRoom',{roomId,playerId:user._id});
+      socket.emit('leftRoom',{roomId:roomIdRef.current,playerId:user._id});
     };
   }, [user]);
 
