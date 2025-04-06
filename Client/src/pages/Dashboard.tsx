@@ -3,10 +3,8 @@ import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Swords, Users, Trophy, Timer, Target, TrendingUp, X, ChevronRight, Eye, PlusCircle } from "lucide-react"
 import { useGetMe, useGetLeaderboard } from "../services/queries"
-import { isequalto100 } from "../Utils/SequenceChecker"
 
 const Dashboard = () => {
-  console.log(isequalto100('2*5m(4/4^6^6)'));
   const [duelId, setDuelId] = useState("")
   const [isJoiningDuel, setIsJoiningDuel] = useState(false)
   const { data: user, isLoading, isError } = useGetMe();

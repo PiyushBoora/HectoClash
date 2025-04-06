@@ -9,7 +9,7 @@ const routes = require('./routes/index');
 const http = require('http');
 const { Server } = require('socket.io');
 const Redis = require('ioredis');
-const redis = new Redis("redis://localhost:6379");
+// const redis = new Redis("redis://localhost:6379");
 
 const connectToDB = require('./configs/conn');
 const { getRandomQuestions } = require('./data/RandomSequences');
@@ -145,7 +145,24 @@ io.on("connection", (socket) => {
   });
   
   
-
+  socket.on("leftRoom", ({ roomId, playerId }) => {
+    const room = rooms[roomId];
+  
+    if (!room) return;
+  
+    const leavingPlayer = room.players.find((p) => p.playerId === playerId);
+  
+    if (leavingPlayer) {
+      const socketIdToExclude = leavingPlayer.id;
+  
+      io.to(roomId).except(socketIdToExclude).emit("message", {
+        message: "Opponent left the Game!",
+      });
+    }
+  
+    room.players = room.players.filter((p) => p.playerId !== playerId);
+  });
+  
 
   // Add handler for spectator connection
   socket.on("spectatorJoin", () => {

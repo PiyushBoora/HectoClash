@@ -24,10 +24,12 @@ const Spectator = () => {
   useEffect(() => {
     // socket.emit('spectatorJoin');
 
-    socket.on('roomsUpdate', ({ rooms }) => {
-        console.log(rooms);
-      setRooms(rooms);
-    });
+    socket.on('roomsUpdate', (data: { rooms: Record<string, Room> }) => {
+      const filteredRooms = Object.values(data.rooms).filter((room) => room.players.length === 2)
+      setRooms(filteredRooms)
+    })
+    
+    
 
     return () => {
       socket.off('roomsUpdate');
@@ -41,7 +43,7 @@ const Spectator = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] pt-10 px-4">
+    <div className="min-h-screen bg-[#1a1a1a] pt-20 px-4">
       <h2 className="text-3xl font-bold text-[#e0e0e0] text-center mb-8">Active Duels</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
         {rooms.length === 0 ? (
