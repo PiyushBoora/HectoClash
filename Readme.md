@@ -1,14 +1,15 @@
+
 # 🧠 HectoClash
 
 HectoClash is a real-time multiplayer mental math game where players compete to solve Hectoc-style puzzles. It blends fast-paced gameplay with educational value, encouraging quick thinking and mental agility.
 
-## 🗂 Project Structure
+## 🗂️ Project Structure
 
-
+```
 .
 🗋 client   # React frontend
 📂 server   # Backend with WebSocket, game logic, and database
-
+```
 
 ---
 
@@ -23,14 +24,14 @@ HectoClash is a real-time multiplayer mental math game where players compete to 
 
 ---
 
-## ⚙ Tech Stack
+## ⚙️ Tech Stack
 
-*Frontend (client):*
+**Frontend (client):**
 - React.js
 - Socket.IO Client
 - Tailwind CSS
 
-*Backend (server):*
+**Backend (server):**
 - Node.js
 - Express.js
 - Socket.IO / WebSockets
@@ -47,41 +48,41 @@ HectoClash is a real-time multiplayer mental math game where players compete to 
 - npm or yarn
 
 ### Clone the repository
-bash
+```bash
 git clone https://github.com/your-username/hectoClash.git
 cd hectoClash
-
+```
 
 ### Environment Variables
-Create a .env file inside the server directory with the following content:
+Create a `.env` file inside the `server` directory with the following content:
 
+```env
+MONGODB_URI
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+PORT=8080
+SESSION_SECRET
+JWT_KEY
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
+GOOGLE_CALLBACK_URL=http://localhost:8080/api/auth/google/callback
+```
 
-- MONGODB_URI
-- GOOGLE_CLIENT_ID
-- GOOGLE_CLIENT_SECRET
-- PORT=8080
-- SESSION_SECRET
-- JWT_KEY
-- NODE_ENV=development
-- FRONTEND_URL=http://localhost:5173
-- GOOGLE_CALLBACK_URL=http://localhost:8080/api/auth/google/callback
-
-
-> *Note:* These credentials are for development only. Do *not* commit .env files or use them in production.
+> **Note:** These credentials are for development only. Do **not** commit `.env` files or use them in production.
 
 ### Start the Client
-bash
+```bash
 cd client
 npm install
 npm run dev
-
+```
 
 ### Start the Server
-bash
+```bash
 cd server
 npm install
 npm start
-
+```
 
 ---
 
@@ -95,9 +96,9 @@ npm start
 
 ## 👨‍💻 Team
 
-- *Arpit Markana* – Frontend Developer  
-- *Piyush Kumar* – Full-Stack Developer & QA  
-- *Yushae Hasmi* – Project Manager & Data Analyst  
+- **Arpit Markana** – Backend Developer  
+- **Piyush Kumar** – Full-Stack Developer 
+- **Yushae Hasmi** – Full-Stack Developer 
 
 ---
 
