@@ -56,15 +56,15 @@ cd hectoClash
 Create a .env file inside the server directory with the following content:
 
 
-MONGODB_URI
-GOOGLE_CLIENT_ID
-GOOGLE_CLIENT_SECRET
-PORT=8080
-SESSION_SECRET
-JWT_KEY
-NODE_ENV=development
-FRONTEND_URL=http://localhost:5173
-GOOGLE_CALLBACK_URL=http://localhost:8080/api/auth/google/callback
+- MONGODB_URI
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- PORT=8080
+- SESSION_SECRET
+- JWT_KEY
+- NODE_ENV=development
+- FRONTEND_URL=http://localhost:5173
+- GOOGLE_CALLBACK_URL=http://localhost:8080/api/auth/google/callback
 
 
 > *Note:* These credentials are for development only. Do *not* commit .env files or use them in production.
