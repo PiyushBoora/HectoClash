@@ -28,7 +28,6 @@ function App() {
           <Route path="/analysis/:gameId" element={<Analysis />} />
           <Route path="/random/match" element={<RandomMatch />} />
         </Routes>
-     
     </main>
   )
 }
