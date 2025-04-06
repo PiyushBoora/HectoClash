@@ -30,6 +30,12 @@ function App() {
           <Route path="/analysis/:gameId" element={<Analysis />} />
           <Route path="/random/match" element={<RandomMatch />} />
         </Routes>
+        <Toaster
+        position="bottom-center"
+        toastOptions={{
+          style: { background: "transparent", border: "none" },
+        }}
+      />
     </main>
   )
 }
