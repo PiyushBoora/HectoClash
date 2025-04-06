@@ -322,7 +322,7 @@ const Dashboard = () => {
                                 />
                               </div>
                               <p className="text-sm mt-1">
-                                {player.totalSolved > 0
+                                {player.gamesPlayed > 0
                                   ? Math.round((player.wins / player.gamesPlayed) * 100)
                                   : 0}
                                 %
