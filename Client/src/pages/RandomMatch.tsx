@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Timer } from "lucide-react";
 import Sequence from "./Sequence";
@@ -8,15 +8,14 @@ import socket from "../Utils/socket";
 import { useGetMe } from "../services/queries";
 import axios from "../Utils/axios";
 import { useCreateDuel } from "../services/mutations";
-const generateDuelId = () => {
-    return Math.random().toString(36).substring(2, 10).toUpperCase();
-  };
-//   const roomId=generateDuelId(); // Room ID
-let id=''; 
+
 const RandomMatch = () => {
   const navigate = useNavigate();
   const { data: user, isLoading: userFetching, isError: userError } = useGetMe();
-  const [score,setScore]=useState(0);
+  const [score, setScore] = useState(0);
+  // Use a ref to maintain a consistent roomId that doesn't trigger re-renders
+  const roomIdRef = useRef('');
+  
   // Opponent state with all relevant data
   const [opponentState, setOpponentState] = useState({
     opponent: null,
@@ -30,16 +29,17 @@ const RandomMatch = () => {
   const [isGameActive, setIsGameActive] = useState(false);
   const [gameCanStart, setGameCanStart] = useState(false);  
   const [gameEnded, setGameEnded] = useState(false);
-const [gameResultMessage, setGameResultMessage] = useState("");
+  const [gameResultMessage, setGameResultMessage] = useState("");
 
-  const { mutate: createDuel,isPending:creatingDuel } = useCreateDuel();
+  const { mutate: createDuel, isPending: creatingDuel } = useCreateDuel();
+  
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const fetchOpponent = async (userId,roomId) => {
+  const fetchOpponent = async (userId, roomId) => {
     console.log(userId);
     if (!userId) return;
     setOpponentState((prev) => ({ ...prev, isLoading: true, isError: false }));
@@ -59,15 +59,19 @@ const [gameResultMessage, setGameResultMessage] = useState("");
     }
   };
   
-    useEffect(()=>{
-      
-       socket.emit("joinMatchRoom", { playerId:user._id });
-       return () => {   
-        socket.off("joinMatchRoom");
-      };
-    },[])
-    // console.log(opponentState);
   useEffect(() => {
+    if (!user?._id) return;
+    
+    socket.emit("joinMatchRoom", { playerId: user._id });
+    
+    return () => {   
+      socket.off("joinMatchRoom");
+    };
+  }, [user]);
+  
+  useEffect(() => {
+    if (!user?._id) return;
+    
     // Listen for both players being ready
     socket.on("bothPlayersReady", ({roomId}) => {
       console.log("Both players are ready, starting game...");
@@ -95,52 +99,52 @@ const [gameResultMessage, setGameResultMessage] = useState("");
 
     // Handle game over
     socket.on("gameOver", ({ message, room }) => {
-        console.log(room);
-      
-        const isPlayer1 = room.players[0].playerId === user._id;
-        const currentPlayer = isPlayer1 ? room.players[0] : room.players[1];
-        const opponentPlayer = isPlayer1 ? room.players[1] : room.players[0];
-      
-        createDuel(
-          {
-            player1Id: room.players[0].playerId,
-            player2Id: room.players[1].playerId,
-            player1Score: room.players[0].score,
-            player2Score: room.players[1].score,
-            duelTime: room.duelTime,
+      console.log(room);
+    
+      const isPlayer1 = room.players[0].playerId === user._id;
+      const currentPlayer = isPlayer1 ? room.players[0] : room.players[1];
+      const opponentPlayer = isPlayer1 ? room.players[1] : room.players[0];
+    
+      createDuel(
+        {
+          player1Id: room.players[0].playerId,
+          player2Id: room.players[1].playerId,
+          player1Score: room.players[0].score,
+          player2Score: room.players[1].score,
+          duelTime: room.duelTime,
+        },
+        {
+          onSuccess: () => {
+            // Compare currentPlayer and opponent scores
+            let resultMsg = "It's a draw!";
+            if (currentPlayer.score > opponentPlayer.score) resultMsg = "You won!";
+            else if (currentPlayer.score < opponentPlayer.score) resultMsg = "You missed this time!";
+            setGameResultMessage(resultMsg);
+            setGameEnded(true);
           },
-          {
-            onSuccess: () => {
-              // Compare currentPlayer and opponent scores
-              let resultMsg = "It's a draw!";
-              if (currentPlayer.score > opponentPlayer.score) resultMsg = "You won!";
-              else if (currentPlayer.score < opponentPlayer.score) resultMsg = "You missed this time!";
-              setGameResultMessage(resultMsg);
-              setGameEnded(true);
-            },
-            onError: () => {
-              setGameResultMessage("Error saving duel. Please try again.");
-              setGameEnded(true);
-            },
-          }
-        );
-      });
-      
+          onError: () => {
+            setGameResultMessage("Error saving duel. Please try again.");
+            setGameEnded(true);
+          },
+        }
+      );
+    });
+    
 
     // Handle room update, fetch opponent details and update score
     socket.on("roomUpdate", (room) => {
       console.log(user._id);
-      const otherPlayer = room.players.find((p) => p.playerId !== user?._id);
+      roomIdRef.current = room.roomId; // Store roomId in the ref
+      const otherPlayer = room.players.find((p) => p.playerId !== user._id);
       if (otherPlayer) {
-        id=room.roomId;
-        fetchOpponent(otherPlayer.playerId,room.roomId);
+        fetchOpponent(otherPlayer.playerId, room.roomId);
         setOpponentState((prev) => ({ ...prev, score: otherPlayer.score }));
       }
     });
 
     // Listen for score updates from other players
     socket.on("latestScore", ({ players }) => {
-      const otherPlayer = players.find((p) => p.playerId !== user?._id);
+      const otherPlayer = players.find((p) => p.playerId !== user._id);
       if (otherPlayer) {
         setOpponentState((prev) => ({ ...prev, score: otherPlayer.score }));
       }
@@ -155,12 +159,12 @@ const [gameResultMessage, setGameResultMessage] = useState("");
       socket.off("roomUpdate");
       socket.off("latestScore");
     };
-  }, []);
+  }, [user]);
 
   const handleScoreUpdate = () => {
     const newScore = score + 1;
     setScore(newScore);
-    socket.emit("updateScore", { roomId:id, score: newScore });
+    socket.emit("updateScore", { roomId: roomIdRef.current, score: newScore });
   };
 
   if (isGameActive && (userFetching || opponentState.isLoading || opponentState.isError || userError)) {
@@ -181,7 +185,7 @@ const [gameResultMessage, setGameResultMessage] = useState("");
   return (
     <>
     {
-      gameEnded?
+      gameEnded ?
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a1a1a] text-white px-4">
         <h1 className="text-4xl font-bold mb-6">{gameResultMessage}</h1>
         <div className="flex gap-10 items-center justify-center text-center">
@@ -236,22 +240,15 @@ const [gameResultMessage, setGameResultMessage] = useState("");
           </div>
 
           <div className="flex-1 flex-col flex items-center justify-center">
-            {sequence.length > 0 && <Sequence sequence={sequence} handleScoreUpdate={handleScoreUpdate} />}
+            {sequence.length > 0 && <Sequence sequence={sequence} handleScoreUpdate={handleScoreUpdate} roomId={roomIdRef.current} />}
           </div>
         </div>
       ) : (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a1a1a] text-[#e0e0e0]">
           <h1 className="text-3xl font-bold">Searching for Opponent...</h1>
-          {/* {roomId && (
-            <div className="mt-4">
-              <p className="text-xl">Your Duel ID:</p>
-              <span className="text-[#00ffff] font-mono text-2xl">{roomId}</span>
-            </div>
-          )} */}
         </div>
       )
     }
-     
     </>
   );
 };

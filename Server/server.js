@@ -8,6 +8,8 @@ const session = require('express-session');
 const routes = require('./routes/index');
 const http = require('http');
 const { Server } = require('socket.io');
+const Redis = require('ioredis');
+const redis = new Redis("redis://localhost:6379");
 
 const connectToDB = require('./configs/conn');
 const { getRandomQuestions } = require('./data/RandomSequences');
@@ -77,46 +79,71 @@ io.on("connection", (socket) => {
 
 
   
-  socket.on('joinMatchRoom', ({ playerId }) => {
+  const LOCK_KEY = "matchmaking-lock";
+  const LOCK_TTL = 3000; // 3 seconds
+  
+  socket.on('joinMatchRoom', async ({ playerId }) => {
     console.log(`${playerId} is trying to join a match`);
   
-    if (randomJoiners.length > 0) {
-      const opponent = randomJoiners.shift(); // Take out the first waiting player
-      const roomId = uuidv4(); // Generate a new unique room ID
+    try {
+      // const lockToken = uuidv4(); 
+      // A unique value for our lock attempt
   
-      // Create the room in your rooms object
-      rooms[roomId] = {
-        players: [],
-        timer: 120,
-        duelTime: GAME_TIME,
-        gameStarted: false,
-        roomId:roomId
-      };
+      // Try to acquire the lock
+      // const acquired = await redis.set(LOCK_KEY, lockToken, 'PX', LOCK_TTL, 'NX');
+      // if (!acquired) {
+      //   console.log("Matchmaking in progress. Please try again.");
+      //   socket.emit("matchmakingPending");
+      //   return;
+      // }
   
-      // Add both players to the room
-      [opponent, { socket, playerId }].forEach(({ socket, playerId }) => {
-        rooms[roomId].players.push({
-          id: socket.id,
-          playerId,
-          score: 0,
-          sequenceIndex: 0,
-          ready: false,
-          currentExpression: "",
+      // Critical section begins
+      if (randomJoiners.length > 0) {
+        const opponent = randomJoiners.shift();
+        const roomId = uuidv4();
+  
+        rooms[roomId] = {
+          players: [],
+          timer: 120,
+          duelTime: GAME_TIME,
+          gameStarted: false,
+          roomId: roomId,
+        };
+  
+        [opponent, { socket, playerId }].forEach(({ socket, playerId }) => {
+          rooms[roomId].players.push({
+            id: socket.id,
+            playerId,
+            score: 0,
+            sequenceIndex: 0,
+            ready: false,
+            currentExpression: "",
+          });
+  
+          socket.join(roomId);
+          socket.emit('joinedMatchRoom', { roomId });
         });
   
-        socket.join(roomId);
-        socket.emit('joinedMatchRoom', { roomId });
-      });
+        console.log(`Room ${roomId} created for ${opponent.playerId} and ${playerId}`);
+        io.to(roomId).emit("roomUpdate", rooms[roomId]);
+        emitRoomsUpdate();
+      } else {
+        randomJoiners.push({ socket, playerId });
+        console.log(`${playerId} is waiting for an opponent`);
+      }
   
-      console.log(`Room ${roomId} created for ${opponent.playerId} and ${playerId}`);
-      io.to(roomId).emit("roomUpdate", rooms[roomId]);
-      emitRoomsUpdate();
-    } else {
-      // Add current player to the waiting queue
-      randomJoiners.push({ socket, playerId });
-      console.log(`${playerId} is waiting for an opponent`);
+      // Critical section ends
+      // Release the lock
+      // const currentLockValue = await redis.get(LOCK_KEY);
+      // if (currentLockValue === lockToken) {
+      //   await redis.del(LOCK_KEY);
+      // }
+  
+    } catch (error) {
+      console.error("Error in matchmaking:", error);
     }
   });
+  
   
 
 
@@ -154,11 +181,14 @@ io.on("connection", (socket) => {
   // Listen for mathExpression events
   socket.on("mathExpression", ({ expression, playerId,roomId }) => {
     // Find which room this player is in
-      if(!roomId)return;
-      const player = rooms[roomId].players.find(p => p.playerId === playerId);
+    console.log('rr',roomId);
+    if(!roomId)return;
+    const player = rooms[roomId].players.find(p => p.playerId === playerId);
+    // console.log(roomId,player);
       if (player) {
         // Update the player's current expression
         player.currentExpression = expression;
+        console.log(player);
         // Also update the general room state for spectators
         emitRoomsUpdate();
       }

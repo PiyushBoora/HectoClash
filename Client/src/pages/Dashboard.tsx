@@ -12,7 +12,7 @@ const Dashboard = () => {
   const { data: user, isLoading, isError } = useGetMe();
   const { data: leaderboard, isLoading: isLeaderboardLoading } = useGetLeaderboard();
   const navigate = useNavigate()
-  console.log(user);
+  console.log(leaderboard);
   useEffect(() => {
     if (isError) navigate("/login")
   }, [isError])
@@ -309,7 +309,7 @@ const Dashboard = () => {
                                 <motion.div
                                   initial={{ width: 0 }}
                                   animate={{
-                                    width: `${player.totalSolved > 0 ? Math.round((player.wins / player.totalSolved) * 100) : 0}%`,
+                                    width: `${player.gamesPlayed > 0 ? Math.round((player.wins / player.gamesPlayed) * 100) : 0}%`,
                                   }}
                                   transition={{ duration: 1, delay: 0.7 + index * 0.05 }}
                                   className={`h-full rounded-full ${
@@ -325,11 +325,11 @@ const Dashboard = () => {
                               </div>
                               <p className="text-sm mt-1">
                                 {player.totalSolved > 0
-                                  ? Math.round((player.wins / player.totalSolved) * 100)
+                                  ? Math.round((player.wins / player.gamesPlayed) * 100)
                                   : 0}
                                 %
                                 <span className="text-xs text-[#918a8a] ml-1">
-                                  ({player.wins}/{player.totalSolved})
+                                  ({player.wins}/{player.gamesPlayed})
                                 </span>
                               </p>
                             </td>

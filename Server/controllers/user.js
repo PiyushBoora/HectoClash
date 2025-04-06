@@ -29,14 +29,15 @@ const getUserById = async (req, res) => {
 
 const getLeaderboard = async (req, res) => {
   try {
-    const leaderboard = await User.find({}, '_id name stats.wins stats.totalSolved') // Select only necessary fields
-      .sort({ 'stats.wins': -1, 'stats.totalSolved': -1 }); // Sort by wins desc, then totalSolved desc
+    const leaderboard = await User.find({}, '_id name stats.wins stats.totalSolved stats.gamesPlayed') // Select only necessary fields
+      .sort({ 'stats.wins': -1, 'stats.gamesPlayed': -1 }); // Sort by wins desc, then totalSolved desc
 
     const formattedLeaderboard = leaderboard.map(user => ({
       _id:user._id,
       name: user.name,
       wins: user.stats.wins,
-      totalSolved: user.stats.totalSolved
+      totalSolved: user.stats.totalSolved,
+      gamesPlayed:user.stats.gamesPlayed
     }));
 
     res.status(200).json({ leaderboard: formattedLeaderboard });

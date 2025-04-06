@@ -215,10 +215,11 @@ type Box = {
 type SequenceProps = {
   sequence: number[];
   handleScoreUpdate: () => void;
+  roomId?:string;
 };
 
-const Sequence = ({ sequence, handleScoreUpdate }: SequenceProps) => {
-  const { id: roomId } = useParams();
+const Sequence = ({ sequence, handleScoreUpdate,roomId }: SequenceProps) => {
+  console.log(sequence);
   const fixedOperators: OperatorType[] = ["+", "-", "*", "/", "^", "*10+"];
   const { data: user } = useGetMe();
 
