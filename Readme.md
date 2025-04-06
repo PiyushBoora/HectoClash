@@ -3,6 +3,10 @@
 
 HectoClash is a real-time multiplayer mental math game where players compete to solve Hectoc-style puzzles. It blends fast-paced gameplay with educational value, encouraging quick thinking and mental agility.
 
+## 🚀 Live Demo
+
+[Click here to view the live app](https://hectoclash-1.onrender.com)
+
 ## 🗂️ Project Structure
 
 ```
