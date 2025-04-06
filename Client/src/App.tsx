@@ -4,10 +4,15 @@ import Dashboard from "./pages/Dashboard";
 import Game from "./pages/Game";
 import Wait from "./pages/Wait";
 import IndividualMatch from "./pages/IndividualMatch";
-import Spectator from "./pages/spectator";
+import Spectator from "./pages/Spectator";
 import Practice from "./pages/Practice";
 import Analysis from "./pages/Analysis";
 import Header from "./components/Header";
+import DailyChallengePage from "./components/DailyChallengePage";
+import WeeklyChallengePage from "./components/WeeklyChallengePage";
+import About from "./pages/About";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 function App() {
 
   return (
@@ -18,12 +23,16 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/game/:id" element={<Game />} />
           <Route path="/wait/:id" element={<Wait />} />
+          <Route path="/about" element={<About />} />
           <Route path="/spectate" element={<Spectator/>}/>
           <Route path="/spectate/:id" element={<IndividualMatch/>}/>
           <Route path="/practice" element={<Practice />} />
           <Route path="/analysis/:gameId" element={<Analysis />} />
+          <Route path="/challenge-game/daily" element={<DailyChallengePage />} />
+          <Route path="/challenge-game/weekly" element={<WeeklyChallengePage />} />
+
         </Routes>
-     
+        <ToastContainer position="top-center" />
     </main>
   )
 }

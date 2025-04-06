@@ -56,7 +56,7 @@ const [gameResultMessage, setGameResultMessage] = useState("");
   
     useEffect(()=>{
       
-       socket.emit("joinRoom", { roomId: roomId, playerId:user._id,gameTime:20 });
+       socket.emit("joinRoom", { roomId: roomId, playerId:user._id,gameTime:120 });
        return () => {
         socket.off("joinRoom");
       };

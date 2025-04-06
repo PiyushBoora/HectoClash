@@ -7,9 +7,13 @@ const session = require('express-session');
 const routes = require('./routes/index');
 const http = require('http');
 const { Server } = require('socket.io');
+const { getRandomQuestions } = require('./data/RandomSequences');
+
+
+
 
 const connectToDB = require('./configs/conn');
-const { getRandomQuestions } = require('./data/RandomSequences');
+
 
 dotenv.config();
 require('./configs/passport');
@@ -113,7 +117,9 @@ io.on("connection", (socket) => {
   // Listen for mathExpression events
   socket.on("mathExpression", ({ expression, playerId,roomId }) => {
     // Find which room this player is in
-    
+    if(!roomId){
+      return
+    }
       const player = rooms[roomId].players.find(p => p.playerId === playerId);
       if (player) {
         // Update the player's current expression
